@@ -35,6 +35,8 @@ public class BinanceExchangeIntegration {
         Boolean.parseBoolean(
             System.getProperty(
                 BinanceExchange.SPECIFIC_PARAM_USE_SANDBOX, Boolean.FALSE.toString()));
+    spec.setApiKey( System.getenv("apikey"));
+    spec.setSecretKey( System.getenv("apisecret"));
     spec.setExchangeSpecificParametersItem(BinanceExchange.SPECIFIC_PARAM_USE_SANDBOX, useSandbox);
     exchange.applySpecification(spec);
   }

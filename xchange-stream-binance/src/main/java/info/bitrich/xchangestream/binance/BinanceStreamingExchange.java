@@ -50,7 +50,7 @@ public class BinanceStreamingExchange extends BinanceExchange implements Streami
         Boolean.TRUE.equals(
             exchangeSpecification.getExchangeSpecificParametersItem(USE_REALTIME_BOOK_TICKER));
     if (userHigherFrequency) {
-      orderBookUpdateFrequencyParameter = "@100ms";
+      orderBookUpdateFrequencyParameter = "@100ms"; //100ms, 1000ms
     }
   }
 

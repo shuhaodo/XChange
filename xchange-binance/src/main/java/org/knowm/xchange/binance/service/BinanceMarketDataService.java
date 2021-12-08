@@ -1,7 +1,9 @@
 package org.knowm.xchange.binance.service;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.knowm.xchange.binance.BinanceAdapters;
@@ -9,11 +11,9 @@ import org.knowm.xchange.binance.BinanceAuthenticated;
 import org.knowm.xchange.binance.BinanceErrorAdapter;
 import org.knowm.xchange.binance.BinanceExchange;
 import org.knowm.xchange.binance.dto.BinanceException;
-import org.knowm.xchange.binance.dto.marketdata.BinanceAggTrades;
-import org.knowm.xchange.binance.dto.marketdata.BinanceOrderbook;
-import org.knowm.xchange.binance.dto.marketdata.BinancePriceQuantity;
-import org.knowm.xchange.binance.dto.marketdata.BinanceTicker24h;
+import org.knowm.xchange.binance.dto.marketdata.*;
 import org.knowm.xchange.client.ResilienceRegistries;
+import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderType;
 import org.knowm.xchange.dto.marketdata.OrderBook;
@@ -21,6 +21,7 @@ import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.marketdata.Trades;
 import org.knowm.xchange.dto.marketdata.Trades.TradeSortType;
+import org.knowm.xchange.dto.meta.CurrencyMetaData;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.exceptions.ExchangeException;
 import org.knowm.xchange.service.marketdata.MarketDataService;
@@ -147,5 +148,42 @@ public class BinanceMarketDataService extends BinanceMarketDataServiceRaw
   public List<Ticker> getAllBookTickers() throws IOException {
     List<BinancePriceQuantity> binanceTickers = tickerAllBookTickers();
     return BinanceAdapters.adaptPriceQuantities(binanceTickers);
+  }
+
+  public List<CurrencyPair> getMarginTradingPairs() throws IOException {
+    try {
+      List<BinanceMarginPair> binanceMarginPairs = marginPairs();
+      return binanceMarginPairs.stream()
+              .filter( pair -> pair.isEnabled())
+              .map(at -> at.toPair() )
+              .collect(Collectors.toList());
+    } catch (BinanceException e) {
+      throw BinanceErrorAdapter.adapt(e);
+    }
+  }
+
+  public Map<Currency, CurrencyMetaData> getAllCurrencies() throws IOException {
+    try {
+      Map<String, BinanceAsset> allCurrencies = allCurrencies();
+      List<BinanceMarginCurrency> marginCurrencies = marginCurrencies();
+      HashMap<Currency, CurrencyMetaData> currencies = new HashMap();
+
+      for (Map.Entry<String, BinanceAsset> entry: allCurrencies.entrySet()) {
+        Currency currency = new Currency(entry.getKey());
+        currencies.put(currency, entry.getValue().toCurrencyMeta());
+      }
+
+      for (BinanceMarginCurrency marginCurrency: marginCurrencies) {
+        Currency currency = new Currency(marginCurrency.getCoin());
+        CurrencyMetaData metaData = currencies.get(currency);
+        metaData.setInterest(marginCurrency.getInterest());
+        metaData.setIsBorrowable(marginCurrency.isBorrowable());
+        currencies.put(currency, metaData);
+      }
+
+      return currencies;
+    } catch (BinanceException e) {
+      throw BinanceErrorAdapter.adapt(e);
+    }
   }
 }

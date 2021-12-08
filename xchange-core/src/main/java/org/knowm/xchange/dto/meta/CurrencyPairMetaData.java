@@ -56,6 +56,9 @@ public class CurrencyPairMetaData implements Serializable {
   /** Is market order type allowed on this pair. */
   private final boolean marketOrderEnabled;
 
+  /** Is margin order allowed on this pair */
+  private boolean marginOrderEnabled;
+
   /**
    * Constructor
    *
@@ -82,7 +85,8 @@ public class CurrencyPairMetaData implements Serializable {
         feeTiers,
         null,
         null,
-        true);
+        true,
+        false);
   }
 
   /**
@@ -113,7 +117,8 @@ public class CurrencyPairMetaData implements Serializable {
         feeTiers,
         amountStepSize,
         null,
-        true);
+        true,
+        false);
   }
 
   public CurrencyPairMetaData(
@@ -136,7 +141,36 @@ public class CurrencyPairMetaData implements Serializable {
         feeTiers,
         null,
         tradingFeeCurrency,
-        true);
+        true,
+        false);
+  }
+
+  public CurrencyPairMetaData(
+          BigDecimal tradingFee,
+          BigDecimal minimumAmount,
+          BigDecimal maximumAmount,
+          BigDecimal counterMinimumAmount,
+          BigDecimal counterMaximumAmount,
+          Integer baseScale,
+          Integer priceScale,
+          Integer volumeScale,
+          FeeTier[] feeTiers,
+          BigDecimal amountStepSize,
+          Currency tradingFeeCurrency,
+          boolean marketOrderEnabled) {
+    this(tradingFee,
+            minimumAmount,
+            maximumAmount,
+            counterMinimumAmount,
+            counterMaximumAmount,
+            baseScale,
+            priceScale,
+            volumeScale,
+            feeTiers,
+            amountStepSize,
+            tradingFeeCurrency,
+            marketOrderEnabled,
+            false);
   }
 
   /**
@@ -160,7 +194,9 @@ public class CurrencyPairMetaData implements Serializable {
       @JsonProperty("fee_tiers") FeeTier[] feeTiers,
       @JsonProperty("amount_step_size") BigDecimal amountStepSize,
       @JsonProperty("trading_fee_currency") Currency tradingFeeCurrency,
-      @JsonProperty("market_order_enabled") boolean marketOrderEnabled) {
+      @JsonProperty("market_order_enabled") boolean marketOrderEnabled,
+      @JsonProperty("margin_order_enabled") boolean marginOrderEnabled
+      ) {
 
     this.tradingFee = tradingFee;
     this.minimumAmount = minimumAmount;
@@ -177,6 +213,7 @@ public class CurrencyPairMetaData implements Serializable {
     this.amountStepSize = amountStepSize;
     this.tradingFeeCurrency = tradingFeeCurrency;
     this.marketOrderEnabled = marketOrderEnabled;
+    this.marginOrderEnabled = marginOrderEnabled;
   }
 
   public BigDecimal getTradingFee() {
@@ -232,6 +269,9 @@ public class CurrencyPairMetaData implements Serializable {
     return marketOrderEnabled;
   }
 
+  public boolean isMarginOrderEnabled() { return marginOrderEnabled; }
+  public void setMarginOrderEnabled(boolean marginOrderEnabled) { this.marginOrderEnabled = marginOrderEnabled; }
+
   public static class Builder {
 
     private BigDecimal tradingFee;
@@ -246,6 +286,7 @@ public class CurrencyPairMetaData implements Serializable {
     private BigDecimal amountStepSize;
     private Currency tradingFeeCurrency;
     private boolean marketOrderEnabled;
+    private boolean marginOrderEnabled;
 
     public static Builder from(CurrencyPairMetaData metaData) {
       return new Builder()
@@ -260,7 +301,8 @@ public class CurrencyPairMetaData implements Serializable {
           .volumeScale(metaData.getVolumeScale())
           .amountStepSize(metaData.getAmountStepSize())
           .tradingFee(metaData.getTradingFee())
-          .tradingFeeCurrency(metaData.getTradingFeeCurrency());
+          .tradingFeeCurrency(metaData.getTradingFeeCurrency())
+          .marginOrderEnabled(metaData.isMarginOrderEnabled());
     }
 
     public Builder tradingFee(BigDecimal tradingFee) {
@@ -323,6 +365,11 @@ public class CurrencyPairMetaData implements Serializable {
       return this;
     }
 
+    public Builder marginOrderEnabled(boolean marginOrderEnabled) {
+      this.marginOrderEnabled = marginOrderEnabled;
+      return this;
+    }
+
     public CurrencyPairMetaData build() {
       return new CurrencyPairMetaData(
           tradingFee,
@@ -336,7 +383,8 @@ public class CurrencyPairMetaData implements Serializable {
           feeTiers,
           amountStepSize,
           tradingFeeCurrency,
-          marketOrderEnabled);
+          marketOrderEnabled,
+          marginOrderEnabled);
     }
   }
 
@@ -345,6 +393,8 @@ public class CurrencyPairMetaData implements Serializable {
 
     return "CurrencyPairMetaData [tradingFee="
         + tradingFee
+        + ", marginEnabled="
+        + marginOrderEnabled
         + ", minimumAmount="
         + minimumAmount
         + ", maximumAmount="

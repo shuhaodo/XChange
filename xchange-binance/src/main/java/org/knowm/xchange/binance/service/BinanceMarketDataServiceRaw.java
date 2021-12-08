@@ -4,17 +4,12 @@ import static org.knowm.xchange.binance.BinanceResilience.REQUEST_WEIGHT_RATE_LI
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.knowm.xchange.binance.BinanceAdapters;
 import org.knowm.xchange.binance.BinanceAuthenticated;
 import org.knowm.xchange.binance.BinanceExchange;
-import org.knowm.xchange.binance.dto.marketdata.BinanceAggTrades;
-import org.knowm.xchange.binance.dto.marketdata.BinanceKline;
-import org.knowm.xchange.binance.dto.marketdata.BinanceOrderbook;
-import org.knowm.xchange.binance.dto.marketdata.BinancePrice;
-import org.knowm.xchange.binance.dto.marketdata.BinancePriceQuantity;
-import org.knowm.xchange.binance.dto.marketdata.BinanceTicker24h;
-import org.knowm.xchange.binance.dto.marketdata.KlineInterval;
+import org.knowm.xchange.binance.dto.marketdata.*;
 import org.knowm.xchange.binance.dto.meta.BinanceTime;
 import org.knowm.xchange.client.ResilienceRegistries;
 import org.knowm.xchange.currency.CurrencyPair;
@@ -119,6 +114,27 @@ public class BinanceMarketDataServiceRaw extends BinanceBaseService {
         .withRetry(retry("tickerAllBookTickers"))
         .withRateLimiter(rateLimiter(REQUEST_WEIGHT_RATE_LIMITER))
         .call();
+  }
+
+  public List<BinanceMarginPair> marginPairs() throws IOException {
+    return decorateApiCall(() -> binance.marginAllPairs(apiKey))
+            .withRetry(retry("marginPairs"))
+            .withRateLimiter(rateLimiter(REQUEST_WEIGHT_RATE_LIMITER))
+            .call();
+  }
+
+  public List<BinanceMarginCurrency> marginCurrencies() throws IOException {
+    return decorateApiCall(() -> binance.marginCurrencies(apiKey, getTimestampFactory(), signatureCreator))
+            .withRetry(retry("marginCurrencies"))
+            .withRateLimiter(rateLimiter(REQUEST_WEIGHT_RATE_LIMITER))
+            .call();
+  }
+
+  public Map<String, BinanceAsset> allCurrencies() throws IOException {
+    return decorateApiCall(() -> binance.allCurrencies(apiKey, getTimestampFactory(), signatureCreator))
+            .withRetry(retry("allCurrencies"))
+            .withRateLimiter(rateLimiter(REQUEST_WEIGHT_RATE_LIMITER))
+            .call();
   }
 
   protected int depthPermits(Integer limit) {

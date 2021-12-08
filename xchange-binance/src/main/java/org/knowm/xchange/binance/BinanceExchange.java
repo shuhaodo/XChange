@@ -1,8 +1,8 @@
 package org.knowm.xchange.binance;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
+
 import org.knowm.xchange.BaseExchange;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.binance.dto.account.AssetDetail;
@@ -119,7 +119,17 @@ public class BinanceExchange extends BaseExchange {
     // populate currency pair keys only, exchange does not provide any other metadata for download
     Map<CurrencyPair, CurrencyPairMetaData> currencyPairs = exchangeMetaData.getCurrencyPairs();
     Map<Currency, CurrencyMetaData> currencies = exchangeMetaData.getCurrencies();
+    HashSet<CurrencyPair> marginPairs = new HashSet();
+    Map<Currency, CurrencyMetaData> remoteCurrencies = new HashMap();
 
+    try {
+      BinanceMarketDataService marketDataService =
+              (BinanceMarketDataService) this.marketDataService;
+      marginPairs = new HashSet(marketDataService.getMarginTradingPairs());
+      remoteCurrencies = marketDataService.getAllCurrencies();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
     // Clear all hardcoded currencies when loading dynamically from exchange.
     if (assetDetailMap != null) {
       currencies.clear();
@@ -161,6 +171,7 @@ public class BinanceExchange extends BaseExchange {
         }
 
         boolean marketOrderAllowed = Arrays.asList(symbol.getOrderTypes()).contains("MARKET");
+        boolean marginOrderAllowed = marginPairs.contains(currentCurrencyPair);
         currencyPairs.put(
             currentCurrencyPair,
             new CurrencyPairMetaData(
@@ -176,7 +187,8 @@ public class BinanceExchange extends BaseExchange {
                       because their API returns current fee directly */
                 stepSize,
                 null,
-                marketOrderAllowed));
+                marketOrderAllowed,
+                marginOrderAllowed));
 
         Currency baseCurrency = currentCurrencyPair.base;
         CurrencyMetaData baseCurrencyMetaData =
@@ -189,6 +201,12 @@ public class BinanceExchange extends BaseExchange {
             BinanceAdapters.adaptCurrencyMetaData(
                 currencies, counterCurrency, assetDetailMap, counterPrecision);
         currencies.put(counterCurrency, counterCurrencyMetaData);
+
+        //overwrite with remote currency information
+        CurrencyMetaData remoteBaseCurrencyMeta = remoteCurrencies.get(baseCurrency);
+        CurrencyMetaData remoteCounterCurrencyMeta = remoteCurrencies.get(counterCurrency);
+        if (remoteBaseCurrencyMeta != null) currencies.put(baseCurrency, remoteBaseCurrencyMeta);
+        if (remoteCounterCurrencyMeta != null) currencies.put(counterCurrency, remoteCounterCurrencyMeta);
       }
     }
   }

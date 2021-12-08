@@ -2,20 +2,18 @@ package org.knowm.xchange.binance;
 
 import java.io.IOException;
 import java.util.List;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import java.util.Map;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import org.knowm.xchange.binance.dto.BinanceException;
-import org.knowm.xchange.binance.dto.marketdata.BinanceAggTrades;
-import org.knowm.xchange.binance.dto.marketdata.BinanceOrderbook;
-import org.knowm.xchange.binance.dto.marketdata.BinancePrice;
-import org.knowm.xchange.binance.dto.marketdata.BinancePriceQuantity;
-import org.knowm.xchange.binance.dto.marketdata.BinanceTicker24h;
+import org.knowm.xchange.binance.dto.marketdata.*;
 import org.knowm.xchange.binance.dto.meta.BinanceSystemStatus;
 import org.knowm.xchange.binance.dto.meta.BinanceTime;
 import org.knowm.xchange.binance.dto.meta.exchangeinfo.BinanceExchangeInfo;
+import si.mazi.rescu.ParamsDigest;
+import si.mazi.rescu.SynchronizedValueFactory;
+import static org.knowm.xchange.binance.BinanceAuthenticated.SIGNATURE;
+import static org.knowm.xchange.binance.BinanceAuthenticated.X_MBX_APIKEY;
 
 @Path("")
 @Produces(MediaType.APPLICATION_JSON)
@@ -181,4 +179,38 @@ public interface Binance {
   @GET
   @Path("api/v3/ticker/bookTicker")
   List<BinancePriceQuantity> tickerAllBookTickers() throws IOException, BinanceException;
+
+  /**
+   * @return list of pairs for margin trade
+   * @throws IOException
+   * @throws BinanceException
+   */
+  @GET
+  @Path("sapi/v1/margin/allPairs")
+  List<BinanceMarginPair> marginAllPairs(
+          @HeaderParam(X_MBX_APIKEY) String apiKey) throws IOException, BinanceException;
+
+  /**
+   * @return list of margin currencies
+   * @throws IOException
+   * @throws BinanceException
+   */
+  @GET
+  @Path("sapi/v1/margin/crossMarginData")
+  List<BinanceMarginCurrency> marginCurrencies(
+          @HeaderParam(X_MBX_APIKEY) String apiKey,
+          @QueryParam("timestamp") SynchronizedValueFactory<Long> timestamp,
+          @QueryParam(SIGNATURE) ParamsDigest signature) throws IOException, BinanceException;
+
+  /**
+   * @return list of margin currencies
+   * @throws IOException
+   * @throws BinanceException
+   */
+  @GET
+  @Path("sapi/v1/asset/assetDetail")
+  Map<String, BinanceAsset> allCurrencies(
+          @HeaderParam(X_MBX_APIKEY) String apiKey,
+          @QueryParam("timestamp") SynchronizedValueFactory<Long> timestamp,
+          @QueryParam(SIGNATURE) ParamsDigest signature) throws IOException, BinanceException;
 }
