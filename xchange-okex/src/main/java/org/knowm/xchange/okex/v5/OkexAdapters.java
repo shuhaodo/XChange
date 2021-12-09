@@ -23,10 +23,7 @@ import org.knowm.xchange.instrument.Instrument;
 import org.knowm.xchange.okex.v5.dto.OkexResponse;
 import org.knowm.xchange.okex.v5.dto.account.OkexAssetBalance;
 import org.knowm.xchange.okex.v5.dto.account.OkexWalletBalance;
-import org.knowm.xchange.okex.v5.dto.marketdata.OkexCurrency;
-import org.knowm.xchange.okex.v5.dto.marketdata.OkexInstrument;
-import org.knowm.xchange.okex.v5.dto.marketdata.OkexOrderbook;
-import org.knowm.xchange.okex.v5.dto.marketdata.OkexTrade;
+import org.knowm.xchange.okex.v5.dto.marketdata.*;
 import org.knowm.xchange.okex.v5.dto.trade.OkexAmendOrderRequest;
 import org.knowm.xchange.okex.v5.dto.trade.OkexOrderDetails;
 import org.knowm.xchange.okex.v5.dto.trade.OkexOrderRequest;
@@ -188,19 +185,27 @@ public class OkexAdapters {
   }
 
   public static ExchangeMetaData adaptToExchangeMetaData(
-      ExchangeMetaData exchangeMetaData,
-      List<OkexInstrument> instruments,
-      List<OkexCurrency> currs) {
+          ExchangeMetaData exchangeMetaData,
+          List<OkexInstrument> instruments,
+          List<OkexInstrument> marginInstruments,
+          List<OkexCurrency> currs,
+          List<OkexInterestRate> interestRates) {
 
     Map<CurrencyPair, CurrencyPairMetaData> currencyPairs =
         exchangeMetaData.getCurrencyPairs() == null
             ? new HashMap<>()
             : exchangeMetaData.getCurrencyPairs();
 
+    Set<CurrencyPair> marginPairs = marginInstruments == null
+            ? new HashSet<>()
+            : new HashSet<>(marginInstruments.stream().map(OkexAdapters::adaptCurrencyPair).collect(Collectors.toList()));
+
     Map<Currency, CurrencyMetaData> currencies =
         exchangeMetaData.getCurrencies() == null
             ? new HashMap<>()
             : exchangeMetaData.getCurrencies();
+
+    Map<Currency, BigDecimal> rates = new HashMap<>();
 
     for (OkexInstrument instrument : instruments) {
       if (!"live".equals(instrument.getState())) {
@@ -225,22 +230,36 @@ public class OkexAdapters {
               staticMetaData != null ? staticMetaData.getFeeTiers() : null,
               null,
               pair.counter,
-              true));
+              true,
+              marginPairs.contains(pair))); //if margin trade is supported
+    }
+
+    if (interestRates != null) {
+      interestRates.stream().forEach(rate -> {
+        if (rate.getRate() != null) {
+          Currency key = new Currency(rate.getCurrency());
+          rates.put(key, rate.getRate());
+        }
+      });
     }
 
     if (currs != null) {
       currs.stream()
           .forEach(
-              currency ->
-                  currencies.put(
-                      adaptCurrency(currency),
-                      new CurrencyMetaData(
-                          null,
-                          new BigDecimal(currency.getMaxFee()),
-                          new BigDecimal(currency.getMinWd()),
-                          currency.isCanWd() && currency.isCanDep()
-                              ? WalletHealth.ONLINE
-                              : WalletHealth.OFFLINE)));
+              currency -> {
+                Currency key = adaptCurrency(currency);
+                CurrencyMetaData metaData = new CurrencyMetaData(
+                        new BigDecimal(currency.getMaxFee()),
+                        new BigDecimal(currency.getMinWd()),
+                        currency.isCanWd(),
+                        currency.isCanDep());
+                BigDecimal rate = rates.get(key);
+                if (rate != null) {
+                  metaData.setIsBorrowable(true);
+                  metaData.setInterest(rate);
+                }
+                currencies.put(key, metaData);
+              });
     }
 
     return new ExchangeMetaData(

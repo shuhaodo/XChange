@@ -9,6 +9,7 @@ import org.knowm.xchange.okex.v5.dto.marketdata.*;
 import org.knowm.xchange.utils.DateUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -61,6 +62,35 @@ public class OkexMarketDataServiceRaw extends OkexBaseService {
                               .getExchangeSpecificParametersItem("simulated")))
           .withRateLimiter(rateLimiter(currenciesPath))
           .call();
+    } catch (OkexException e) {
+      throw handleError(e);
+    }
+  }
+
+  public List<OkexInterestRate> getOkexLoanInterests() throws OkexException, IOException {
+    try {
+      OkexResponse<List<OkexInterestRateResult>> data = decorateApiCall(
+              () ->
+                      okexAuthenticated.getInterestRates(
+                              exchange.getExchangeSpecification().getApiKey(),
+                              signatureCreator,
+                              DateUtils.toUTCISODateString(new Date()),
+                              (String)
+                                      exchange
+                                              .getExchangeSpecification()
+                                              .getExchangeSpecificParametersItem("passphrase"),
+                              (String)
+                                      exchange
+                                              .getExchangeSpecification()
+                                              .getExchangeSpecificParametersItem("simulated")))
+              .withRateLimiter(rateLimiter(currenciesPath))
+              .call();
+      List<OkexInterestRateResult> results = data.getData();
+      if (results.isEmpty()) {
+        return new ArrayList();
+      } else {
+        return results.get(0).getRates();
+      }
     } catch (OkexException e) {
       throw handleError(e);
     }

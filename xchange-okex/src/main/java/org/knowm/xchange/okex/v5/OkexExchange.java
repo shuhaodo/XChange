@@ -1,5 +1,6 @@
 package org.knowm.xchange.okex.v5;
 
+import static org.knowm.xchange.okex.v5.service.OkexMarketDataService.MARGIN;
 import static org.knowm.xchange.okex.v5.service.OkexMarketDataService.SPOT;
 
 import java.io.IOException;
@@ -11,6 +12,8 @@ import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.client.ResilienceRegistries;
 import org.knowm.xchange.okex.v5.dto.marketdata.OkexCurrency;
 import org.knowm.xchange.okex.v5.dto.marketdata.OkexInstrument;
+import org.knowm.xchange.okex.v5.dto.marketdata.OkexInterestRate;
+import org.knowm.xchange.okex.v5.dto.marketdata.OkexInterestRateResult;
 import org.knowm.xchange.okex.v5.service.OkexAccountService;
 import org.knowm.xchange.okex.v5.service.OkexMarketDataService;
 import org.knowm.xchange.okex.v5.service.OkexMarketDataServiceRaw;
@@ -96,16 +99,28 @@ public class OkexExchange extends BaseExchange {
             .getOkexInstruments(SPOT, null, null)
             .getData();
 
+    List<OkexInstrument> marginInstruments =
+            ((OkexMarketDataServiceRaw) marketDataService)
+                    .getOkexInstruments(MARGIN, null, null)
+                    .getData();
+
     // Currency data is only retrievable through a private endpoint
     List<OkexCurrency> currencies = null;
+    List<OkexInterestRate> interestRates = null;
     if (exchangeSpecification.getApiKey() != null
         && exchangeSpecification.getSecretKey() != null
         && exchangeSpecification.getExchangeSpecificParametersItem("passphrase") != null) {
       currencies = ((OkexMarketDataServiceRaw) marketDataService).getOkexCurrencies().getData();
+      interestRates = ((OkexMarketDataServiceRaw) marketDataService).getOkexLoanInterests();
     }
 
     exchangeMetaData =
-        OkexAdapters.adaptToExchangeMetaData(exchangeMetaData, instruments, currencies);
+        OkexAdapters.adaptToExchangeMetaData(
+                exchangeMetaData,
+                instruments,
+                marginInstruments,
+                currencies,
+                interestRates);
   }
 
   @NoArgsConstructor(access = AccessLevel.PRIVATE)

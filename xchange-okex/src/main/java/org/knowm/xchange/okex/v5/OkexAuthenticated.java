@@ -21,6 +21,7 @@ import org.knowm.xchange.okex.v5.dto.account.OkexDepositAddress;
 import org.knowm.xchange.okex.v5.dto.account.OkexTradeFee;
 import org.knowm.xchange.okex.v5.dto.account.OkexWalletBalance;
 import org.knowm.xchange.okex.v5.dto.marketdata.OkexCurrency;
+import org.knowm.xchange.okex.v5.dto.marketdata.OkexInterestRateResult;
 import org.knowm.xchange.okex.v5.dto.trade.OkexAmendOrderRequest;
 import org.knowm.xchange.okex.v5.dto.trade.OkexCancelOrderRequest;
 import org.knowm.xchange.okex.v5.dto.trade.OkexOrderDetails;
@@ -34,6 +35,7 @@ public interface OkexAuthenticated extends Okex {
   String balancePath = "/account/balance"; // Stated as 10 req/2 sec
   String tradeFeePath = "/account/trade-fee"; // Stated as 5 req/2 sec
   String currenciesPath = "/asset/currencies"; // Stated as 6 req/sec
+  String interestRatesPath = "/public/interest-rate-loan-quota"; // Stated as 2 req/2sec
   String assetBalancesPath = "/asset/balances"; // Stated as 6 req/sec
   String pendingOrdersPath = "/trade/orders-pending"; // Stated as 20 req/2 sec
   String orderDetailsPath = "/trade/order";
@@ -54,6 +56,7 @@ public interface OkexAuthenticated extends Okex {
           put(currenciesPath, Arrays.asList(6, 1));
           put(assetBalancesPath, Arrays.asList(6, 1));
           put(pendingOrdersPath, Arrays.asList(20, 2));
+          put(interestRatesPath, Arrays.asList(2, 2));
           put(orderDetailsPath, Arrays.asList(60, 2));
           put(placeOrderPath, Arrays.asList(60, 2));
           put(placeBatchOrderPath, Arrays.asList(300, 2));
@@ -126,6 +129,16 @@ public interface OkexAuthenticated extends Okex {
       @HeaderParam("OK-ACCESS-PASSPHRASE") String passphrase,
       @HeaderParam("X-SIMULATED-TRADING") String simulatedTrading)
       throws OkexException, IOException;
+
+  @GET
+  @Path(interestRatesPath)
+  OkexResponse<List<OkexInterestRateResult>> getInterestRates(
+          @HeaderParam("OK-ACCESS-KEY") String apiKey,
+          @HeaderParam("OK-ACCESS-SIGN") ParamsDigest signature,
+          @HeaderParam("OK-ACCESS-TIMESTAMP") String timestamp,
+          @HeaderParam("OK-ACCESS-PASSPHRASE") String passphrase,
+          @HeaderParam("X-SIMULATED-TRADING") String simulatedTrading)
+          throws OkexException, IOException;
 
   @GET
   @Path(assetBalancesPath)

@@ -1,32 +1,67 @@
 package org.knowm.xchange.okex.v5;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.knowm.xchange.currency.CurrencyPair.TRX_USDT;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
-import org.knowm.xchange.dto.Order;
-import org.knowm.xchange.dto.trade.LimitOrder;
-import org.knowm.xchange.dto.trade.OpenOrders;
-import org.knowm.xchange.okex.v5.dto.trade.OkexTradeParams;
-import org.knowm.xchange.okex.v5.service.OkexTradeService;
-import org.knowm.xchange.service.trade.params.CancelOrderParams;
-import org.knowm.xchange.service.trade.params.orders.DefaultQueryOrderParamInstrument;
+import org.knowm.xchange.dto.meta.CurrencyMetaData;
+import org.knowm.xchange.dto.meta.CurrencyPairMetaData;
+import org.knowm.xchange.okex.v5.service.OkexMarketDataService;
 
 @Slf4j
 public class OkexExchangeIntegration {
   // Enter your authentication details here to run private endpoint tests
-  private static final String API_KEY = "";
-  private static final String SECRET_KEY = "";
-  private static final String PASSPHRASE = "";
+  private static final String API_KEY = System.getenv("api-key");
+  private static final String SECRET_KEY = System.getenv("kex");
+  private static final String PASSPHRASE = System.getenv("xek");
+
+  protected static OkexExchange exchange;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    exchange = ExchangeFactory.INSTANCE.createExchange(OkexExchange.class);
+    ExchangeSpecification spec = exchange.getDefaultExchangeSpecification();
+    spec.setApiKey(API_KEY);
+    spec.setSecretKey(SECRET_KEY);
+    spec.setExchangeSpecificParametersItem("passphrase", PASSPHRASE);
+    exchange.applySpecification(spec);
+  }
+
+  @Test
+  public void testExchangeMetaData() {
+    OkexMarketDataService service = (OkexMarketDataService) exchange.getMarketDataService();
+    Collection<CurrencyMetaData> metaData = exchange.getExchangeMetaData().getCurrencies().values();
+    int marginCnt = metaData.stream().filter(it -> it.isBorrowable() && it.getInterest().compareTo(BigDecimal.ZERO) > 0)
+            .collect(Collectors.toList()).size();
+    int withdrawCnt = metaData.stream().filter(it -> it.isWithdrawAllowed())
+            .collect(Collectors.toList()).size();
+    int depositCnt = metaData.stream().filter(it -> it.isDepositAllowed())
+            .collect(Collectors.toList()).size();
+    System.out.println(metaData.size() + " currencies");
+    System.out.println(marginCnt + " margin currencies");
+    System.out.println(withdrawCnt + " currencies allow withdraw");
+    System.out.println(depositCnt + " currencies allow deposit");
+    Assert.assertTrue(marginCnt <= metaData.size() && marginCnt > 0);
+    Assert.assertTrue(withdrawCnt <= metaData.size() && withdrawCnt > 0);
+    Assert.assertTrue(depositCnt <= metaData.size() && depositCnt > 0);
+
+    Collection<CurrencyPairMetaData> pairs = exchange.getExchangeMetaData().getCurrencyPairs().values();
+    List<CurrencyPairMetaData> margins = pairs.stream()
+            .filter( at -> at.isMarginOrderEnabled())
+            .collect(Collectors.toList());
+    Assert.assertTrue(margins.size() < pairs.size() && margins.size() > 0);
+    System.out.println(pairs.size() + " pairs");
+    System.out.println(margins.size() + " margin pairs");
+  }
 
   @Test
   public void testCreateExchangeShouldApplyDefaultSpecification() {
@@ -57,19 +92,10 @@ public class OkexExchangeIntegration {
     assertThat(exchange.getExchangeSpecification().getResilience().isRetryEnabled())
         .isEqualTo(true);
   }
-
+/*
   @Test
   public void testOrderActions() throws Exception {
     if (!API_KEY.isEmpty() && !SECRET_KEY.isEmpty() && !PASSPHRASE.isEmpty()) {
-      ExchangeSpecification spec =
-          ExchangeFactory.INSTANCE
-              .createExchange(OkexExchange.class)
-              .getDefaultExchangeSpecification();
-      spec.setApiKey(API_KEY);
-      spec.setSecretKey(SECRET_KEY);
-      spec.setExchangeSpecificParametersItem("passphrase", PASSPHRASE);
-
-      final Exchange exchange = ExchangeFactory.INSTANCE.createExchange(spec);
       final OkexTradeService okexTradeService = (OkexTradeService) exchange.getTradeService();
 
       assertThat(exchange.getExchangeSpecification().getSslUri()).isEqualTo("https://www.okex.com");
@@ -144,4 +170,6 @@ public class OkexExchangeIntegration {
       log.info("Cancelled order results: {}", results);
     }
   }
+
+ */
 }

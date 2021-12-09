@@ -13,6 +13,7 @@ import org.knowm.xchange.service.marketdata.MarketDataService;
 /** Author: Max Gao (gaamox@tutanota.com) Created: 08-06-2021 */
 public class OkexMarketDataService extends OkexMarketDataServiceRaw implements MarketDataService {
   public static final String SPOT = "SPOT";
+  public static final String MARGIN = "MARGIN";
   public static final String SWAP = "SWAP";
   public static final String FUTURES = "FUTURES";
   public static final String OPTION = "OPTION";
