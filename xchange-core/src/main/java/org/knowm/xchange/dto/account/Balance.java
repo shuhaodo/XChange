@@ -27,7 +27,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
   private final Currency currency;
 
   // Invariant:
-  // total = available + frozen - borrowed + loaned + withdrawing + depositing;
+  // total = available + frozen - borrowed - interest + loaned + withdrawing + depositing;
   private final BigDecimal total;
   private final BigDecimal available;
   private final BigDecimal frozen;
@@ -35,6 +35,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
   private final BigDecimal borrowed;
   private final BigDecimal withdrawing;
   private final BigDecimal depositing;
+  private final BigDecimal interest;
   private final Date timestamp;
 
   /**
@@ -50,6 +51,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
         currency,
         total,
         total,
+        BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
@@ -77,6 +79,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
         BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
+        BigDecimal.ZERO,
         BigDecimal.ZERO);
   }
 
@@ -98,6 +101,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
         total,
         available,
         frozen,
+        BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
@@ -134,6 +138,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
       BigDecimal loaned,
       BigDecimal withdrawing,
       BigDecimal depositing,
+      BigDecimal interest,
       Date timestamp) {
 
     if (total != null && available != null) {
@@ -154,6 +159,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
     this.loaned = loaned;
     this.withdrawing = withdrawing;
     this.depositing = depositing;
+    this.interest = interest;
     this.timestamp = timestamp;
   }
 
@@ -184,7 +190,8 @@ public final class Balance implements Comparable<Balance>, Serializable {
       BigDecimal borrowed,
       BigDecimal loaned,
       BigDecimal withdrawing,
-      BigDecimal depositing) {
+      BigDecimal depositing,
+      BigDecimal interest) {
 
     if (total != null && available != null) {
       BigDecimal sum =
@@ -204,6 +211,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
     this.loaned = loaned;
     this.withdrawing = withdrawing;
     this.depositing = depositing;
+    this.interest = interest;
     this.timestamp = null;
   }
 
@@ -217,6 +225,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
 
     return new Balance(
         currency,
+        BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
@@ -240,7 +249,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
   public BigDecimal getTotal() {
 
     if (total == null) {
-      return available.add(frozen).subtract(borrowed).add(loaned).add(withdrawing).add(depositing);
+      return available.add(frozen).subtract(borrowed).subtract(interest).add(loaned).add(withdrawing).add(depositing);
     } else {
       return total;
     }
@@ -303,6 +312,15 @@ public final class Balance implements Comparable<Balance>, Serializable {
   }
 
   /**
+   * Returns the interest of the available <code>currency</code> in this balance that must be paid
+   *
+   * @return the interest that must be paid
+   */
+  public BigDecimal getInterest() {
+    return interest;
+  }
+
+  /**
    * Returns the loaned amount of the total <code>currency</code> in this balance that will be
    * returned.
    *
@@ -357,6 +375,8 @@ public final class Balance implements Comparable<Balance>, Serializable {
         + loaned
         + ", borrowed="
         + borrowed
+        + ", interest="
+        + interest
         + ", withdrawing="
         + withdrawing
         + ", depositing="
@@ -376,6 +396,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
     result = prime * result + ((available == null) ? 0 : available.hashCode());
     result = prime * result + ((frozen == null) ? 0 : frozen.hashCode());
     result = prime * result + ((borrowed == null) ? 0 : borrowed.hashCode());
+    result = prime * result + ((interest == null) ? 0 : interest.hashCode());
     result = prime * result + ((loaned == null) ? 0 : loaned.hashCode());
     result = prime * result + ((withdrawing == null) ? 0 : withdrawing.hashCode());
     result = prime * result + ((depositing == null) ? 0 : depositing.hashCode());
@@ -430,6 +451,13 @@ public final class Balance implements Comparable<Balance>, Serializable {
     } else if (!borrowed.equals(other.borrowed)) {
       return false;
     }
+    if (interest == null) {
+      if (other.interest != null) {
+        return false;
+      }
+    } else if (!interest.equals(other.interest)) {
+      return false;
+    }
     if (loaned == null) {
       if (other.loaned != null) {
         return false;
@@ -467,6 +495,8 @@ public final class Balance implements Comparable<Balance>, Serializable {
     if (comparison != 0) return comparison;
     comparison = borrowed.compareTo(other.borrowed);
     if (comparison != 0) return comparison;
+    comparison = interest.compareTo(other.interest);
+    if (comparison != 0) return comparison;
     comparison = loaned.compareTo(other.loaned);
     if (comparison != 0) return comparison;
     comparison = withdrawing.compareTo(other.withdrawing);
@@ -483,6 +513,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
     private BigDecimal available;
     private BigDecimal frozen;
     private BigDecimal borrowed = BigDecimal.ZERO;
+    private BigDecimal interest = BigDecimal.ZERO;
     private BigDecimal loaned = BigDecimal.ZERO;
     private BigDecimal withdrawing = BigDecimal.ZERO;
     private BigDecimal depositing = BigDecimal.ZERO;
@@ -496,6 +527,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
           .available(balance.getAvailable())
           .frozen(balance.getFrozen())
           .borrowed(balance.getBorrowed())
+          .interest(balance.getInterest())
           .loaned(balance.getLoaned())
           .withdrawing(balance.getWithdrawing())
           .depositing(balance.getDepositing())
@@ -529,6 +561,12 @@ public final class Balance implements Comparable<Balance>, Serializable {
     public Builder borrowed(BigDecimal borrowed) {
 
       this.borrowed = borrowed;
+      return this;
+    }
+
+    public Builder interest(BigDecimal interest) {
+
+      this.interest = interest;
       return this;
     }
 
@@ -567,7 +605,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
       }
 
       return new Balance(
-          currency, total, available, frozen, borrowed, loaned, withdrawing, depositing, timestamp);
+          currency, total, available, frozen, borrowed, loaned, withdrawing, depositing, interest, timestamp);
     }
   }
 }

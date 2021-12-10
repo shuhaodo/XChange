@@ -33,6 +33,14 @@ public class BinanceAccountServiceRaw extends BinanceBaseService {
         .call();
   }
 
+  public BinanceMarginAccountInformation marginAccount() throws BinanceException, IOException {
+    return decorateApiCall(
+            () -> binance.marginAccount(getRecvWindow(), getTimestampFactory(), apiKey, signatureCreator))
+            .withRetry(retry("marginAccount"))
+            .withRateLimiter(rateLimiter(REQUEST_WEIGHT_RATE_LIMITER), 5)
+            .call();
+  }
+
   public WithdrawResponse withdraw(String coin, String address, BigDecimal amount)
       throws IOException, BinanceException {
     // the name parameter seams to be mandatory

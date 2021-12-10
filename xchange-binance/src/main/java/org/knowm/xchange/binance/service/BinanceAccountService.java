@@ -14,10 +14,7 @@ import org.knowm.xchange.binance.BinanceAuthenticated;
 import org.knowm.xchange.binance.BinanceErrorAdapter;
 import org.knowm.xchange.binance.BinanceExchange;
 import org.knowm.xchange.binance.dto.BinanceException;
-import org.knowm.xchange.binance.dto.account.AssetDetail;
-import org.knowm.xchange.binance.dto.account.BinanceAccountInformation;
-import org.knowm.xchange.binance.dto.account.DepositAddress;
-import org.knowm.xchange.binance.dto.account.WithdrawResponse;
+import org.knowm.xchange.binance.dto.account.*;
 import org.knowm.xchange.client.ResilienceRegistries;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
@@ -94,11 +91,26 @@ public class BinanceAccountService extends BinanceAccountServiceRaw implements A
   public AccountInfo getAccountInfo() throws IOException {
     try {
       BinanceAccountInformation acc = account();
+      BinanceMarginAccountInformation marginAccount = marginAccount();
       List<Balance> balances =
           acc.balances.stream()
               .map(b -> new Balance(b.getCurrency(), b.getTotal(), b.getAvailable()))
               .collect(Collectors.toList());
-      return new AccountInfo(new Date(acc.updateTime), Wallet.Builder.from(balances).build());
+      List<Balance> marginBalances =
+          marginAccount.getUserAssets().stream()
+              .map(b -> new Balance.Builder()
+                      .currency(b.getCurrency())
+                      .available(b.getFree())
+                      .frozen(b.getLocked())
+                      .borrowed(b.getBorrowed())
+                      .interest(b.getInterest())
+                      .total(b.getNetAsset())
+                      .build())
+              .collect(Collectors.toList());
+      return new AccountInfo(
+              new Date(acc.updateTime),
+              Wallet.Builder.from(balances).id("SPOT").build(),
+              Wallet.Builder.from(marginBalances).id("MARGIN").build());
     } catch (BinanceException e) {
       throw BinanceErrorAdapter.adapt(e);
     }

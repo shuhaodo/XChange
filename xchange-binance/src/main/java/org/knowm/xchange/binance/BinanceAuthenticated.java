@@ -17,14 +17,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import org.knowm.xchange.binance.dto.BinanceException;
 import org.knowm.xchange.binance.dto.account.*;
-import org.knowm.xchange.binance.dto.trade.BinanceCancelledOrder;
-import org.knowm.xchange.binance.dto.trade.BinanceListenKey;
-import org.knowm.xchange.binance.dto.trade.BinanceNewOrder;
-import org.knowm.xchange.binance.dto.trade.BinanceOrder;
-import org.knowm.xchange.binance.dto.trade.BinanceTrade;
-import org.knowm.xchange.binance.dto.trade.OrderSide;
-import org.knowm.xchange.binance.dto.trade.OrderType;
-import org.knowm.xchange.binance.dto.trade.TimeInForce;
+import org.knowm.xchange.binance.dto.trade.*;
 import si.mazi.rescu.ParamsDigest;
 import si.mazi.rescu.SynchronizedValueFactory;
 
@@ -34,6 +27,61 @@ public interface BinanceAuthenticated extends Binance {
 
   String SIGNATURE = "signature";
   String X_MBX_APIKEY = "X-MBX-APIKEY";
+
+  @POST
+  @Path("sapi/v1/margin/order")
+  BinanceNewOrder newMarginOrder(
+          @FormParam("symbol") String symbol,
+          @FormParam("side") OrderSide side,
+          @FormParam("type") OrderType type,
+          @FormParam("timeInForce") TimeInForce timeInForce,
+          @FormParam("quantity") BigDecimal quantity,
+          @FormParam("price") BigDecimal price,
+          @FormParam("newClientOrderId") String newClientOrderId,
+          @FormParam("stopPrice") BigDecimal stopPrice,
+          @FormParam("icebergQty") BigDecimal icebergQty,
+          @FormParam("newOrderRespType") BinanceNewOrder.NewOrderResponseType newOrderRespType,
+          @FormParam("sideEffectType") OrderSideEffect sideEffectType,
+          @FormParam("recvWindow") Long recvWindow,
+          @FormParam("timestamp") SynchronizedValueFactory<Long> timestamp,
+          @HeaderParam(X_MBX_APIKEY) String apiKey,
+          @QueryParam(SIGNATURE) ParamsDigest signature)
+          throws IOException, BinanceException;
+
+  @DELETE
+  @Path("sapi/v1/margin/order")
+  BinanceCancelledOrder cancelMarginOrder(
+          @QueryParam("symbol") String symbol,
+          @QueryParam("orderId") String orderId,
+          @QueryParam("origClientOrderId") String origClientOrderId,
+          @QueryParam("newClientOrderId") String newClientOrderId,
+          @QueryParam("recvWindow") Long recvWindow,
+          @QueryParam("timestamp") SynchronizedValueFactory<Long> timestamp,
+          @HeaderParam(X_MBX_APIKEY) String apiKey,
+          @QueryParam(SIGNATURE) ParamsDigest signature)
+          throws IOException, BinanceException;
+
+  @GET
+  @Path("sapi/v1/margin/openOrders")
+  List<BinanceOrder> openMarginOrders(
+          @QueryParam("symbol") String symbol,
+          @QueryParam("recvWindow") Long recvWindow,
+          @QueryParam("timestamp") SynchronizedValueFactory<Long> timestamp,
+          @HeaderParam(X_MBX_APIKEY) String apiKey,
+          @QueryParam(SIGNATURE) ParamsDigest signature)
+          throws IOException, BinanceException;
+
+  @GET
+  @Path("sapi/v1/margin/order")
+  BinanceOrder marginOrderStatus(
+          @QueryParam("symbol") String symbol,
+          @QueryParam("orderId") long orderId,
+          @QueryParam("origClientOrderId") String origClientOrderId,
+          @QueryParam("recvWindow") Long recvWindow,
+          @QueryParam("timestamp") SynchronizedValueFactory<Long> timestamp,
+          @HeaderParam(X_MBX_APIKEY) String apiKey,
+          @QueryParam(SIGNATURE) ParamsDigest signature)
+          throws IOException, BinanceException;
 
   /**
    * Send in a new order
@@ -160,7 +208,7 @@ public interface BinanceAuthenticated extends Binance {
   @Path("api/v3/order")
   BinanceCancelledOrder cancelOrder(
       @QueryParam("symbol") String symbol,
-      @QueryParam("orderId") long orderId,
+      @QueryParam("orderId") String orderId,
       @QueryParam("origClientOrderId") String origClientOrderId,
       @QueryParam("newClientOrderId") String newClientOrderId,
       @QueryParam("recvWindow") Long recvWindow,
@@ -254,6 +302,14 @@ public interface BinanceAuthenticated extends Binance {
       @HeaderParam(X_MBX_APIKEY) String apiKey,
       @QueryParam(SIGNATURE) ParamsDigest signature)
       throws IOException, BinanceException;
+
+  @GET
+  @Path("sapi/v1/margin/account")
+  BinanceMarginAccountInformation marginAccount(
+          @QueryParam("recvWindow") Long recvWindow,
+          @QueryParam("timestamp") SynchronizedValueFactory<Long> timestamp,
+          @HeaderParam(X_MBX_APIKEY) String apiKey,
+          @QueryParam(SIGNATURE) ParamsDigest signature) throws IOException, BinanceException;
 
   /**
    * Get trades for a specific account and symbol.

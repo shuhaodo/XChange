@@ -8,6 +8,9 @@ import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.knowm.xchange.instrument.Instrument;
 
+import java.util.List;
+import java.util.Set;
+
 public interface StreamingMarketDataService {
   /**
    * Get an order book representing the current offered exchange rates (market depth).
@@ -25,11 +28,19 @@ public interface StreamingMarketDataService {
     throw new NotYetImplementedForExchangeException("getOrderBook");
   }
 
+  default Observable<OrderBook> getOrderBooks(Set<CurrencyPair> currencyPairs, Object... args) {
+    throw new NotYetImplementedForExchangeException("getOrderBooks");
+  }
+
   default Observable<OrderBook> getOrderBook(Instrument instrument, Object... args) {
     if (instrument instanceof CurrencyPair) {
       return getOrderBook((CurrencyPair) instrument, args);
     }
     throw new NotYetImplementedForExchangeException("getOrderBook");
+  }
+
+  default boolean supportConcurrentSubscriptions() {
+    return false;
   }
   /**
    * Get a ticker representing the current exchange rate. Emits {@link
@@ -66,6 +77,10 @@ public interface StreamingMarketDataService {
    */
   default Observable<Trade> getTrades(CurrencyPair currencyPair, Object... args) {
     throw new NotYetImplementedForExchangeException("getTrades");
+  }
+
+  default Observable<Trade> getTradesForPairs(Set<CurrencyPair> currencyPair, Object... args) {
+    throw new NotYetImplementedForExchangeException("getTradesForPairs");
   }
 
   default Observable<Trade> getTrades(Instrument instrument, Object... args) {

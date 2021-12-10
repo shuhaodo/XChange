@@ -51,6 +51,23 @@ public interface TradeService extends BaseService {
   }
 
   /**
+   * Gets the open margin orders
+   *
+   * @return the open margin orders, null if some sort of error occurred. Implementers should log the
+   *     error.
+   * @throws ExchangeException - Indication that the exchange reported some kind of error with the
+   *     request or response
+   * @throws NotAvailableFromExchangeException - Indication that the exchange does not support the
+   *     requested function or data
+   * @throws NotYetImplementedForExchangeException - Indication that the exchange supports the
+   *     requested function or data, but it has not yet been implemented
+   * @throws IOException - Indication that a networking error occurred while fetching JSON data
+   */
+  default OpenOrders getOpenMarginOrders() throws IOException {
+    throw new NotYetImplementedForExchangeException("getOpenMarginOrders");
+  }
+
+  /**
    * Gets the open orders
    *
    * @param params The parameters describing the filter. Note that {@link OpenOrdersParams} is an
@@ -98,6 +115,28 @@ public interface TradeService extends BaseService {
   }
 
   /**
+   * Place a market margin order
+   *
+   * <p>If your orders amount does to meet the restrictions dictated by {@link CurrencyPairMetaData}
+   * then the exchange will reject your order. Use {@link org.knowm.xchange.utils.OrderValuesHelper}
+   * to validate and / or adjust it while you'r building an order.
+   *
+   * @param marketOrder
+   * @return the order ID
+   * @throws ExchangeException - Indication that the exchange reported some kind of error with the
+   *     request or response
+   * @throws NotAvailableFromExchangeException - Indication that the exchange does not support the
+   *     requested function or data
+   * @throws NotYetImplementedForExchangeException - Indication that the exchange supports the
+   *     requested function or data, but it has not yet been implemented
+   * @throws IOException - Indication that a networking error occurred while fetching JSON data
+   * @see org.knowm.xchange.utils.OrderValuesHelper
+   */
+  default String placeMarketMarginOrder(MarketOrder marketOrder) throws IOException {
+    throw new NotYetImplementedForExchangeException("placeMarketOrder");
+  }
+
+  /**
    * Place a limit order
    *
    * <p>If your orders amount or limit price does to meet the restrictions dictated by {@link
@@ -117,6 +156,29 @@ public interface TradeService extends BaseService {
    * @see org.knowm.xchange.utils.OrderValuesHelper
    */
   default String placeLimitOrder(LimitOrder limitOrder) throws IOException {
+    throw new NotYetImplementedForExchangeException("placeLimitOrder");
+  }
+
+  /**
+   * Place a limit margin order
+   *
+   * <p>If your orders amount or limit price does to meet the restrictions dictated by {@link
+   * CurrencyPairMetaData} then the exchange will reject your order. Use {@link
+   * org.knowm.xchange.utils.OrderValuesHelper} to validate and / or adjust those values while you'r
+   * building an order.
+   *
+   * @param limitOrder
+   * @return the order ID
+   * @throws ExchangeException - Indication that the exchange reported some kind of error with the
+   *     request or response
+   * @throws NotAvailableFromExchangeException - Indication that the exchange does not support the
+   *     requested function or data
+   * @throws NotYetImplementedForExchangeException - Indication that the exchange supports the
+   *     requested function or data, but it has not yet been implemented
+   * @throws IOException - Indication that a networking error occurred while fetching JSON data
+   * @see org.knowm.xchange.utils.OrderValuesHelper
+   */
+  default String placeLimitMarginOrder(LimitOrder limitOrder) throws IOException {
     throw new NotYetImplementedForExchangeException("placeLimitOrder");
   }
 
@@ -205,6 +267,23 @@ public interface TradeService extends BaseService {
    * @throws IOException - Indication that a networking error occurred while fetching JSON data
    */
   default boolean cancelOrder(CancelOrderParams orderParams) throws IOException {
+    throw new NotYetImplementedForExchangeException("cancelOrder");
+  }
+
+  /**
+   * cancels margin order with matching orderParams
+   *
+   * @param orderParams
+   * @return true if order was successfully cancelled, false otherwise.
+   * @throws ExchangeException - Indication that the exchange reported some kind of error with the
+   *     request or response
+   * @throws NotAvailableFromExchangeException - Indication that the exchange does not support the
+   *     requested function or data
+   * @throws NotYetImplementedForExchangeException - Indication that the exchange supports the
+   *     requested function or data, but it has not yet been implemented
+   * @throws IOException - Indication that a networking error occurred while fetching JSON data
+   */
+  default boolean cancelMarginOrder(CancelOrderParams orderParams) throws IOException {
     throw new NotYetImplementedForExchangeException("cancelOrder");
   }
 
