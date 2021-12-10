@@ -57,7 +57,7 @@ public class TradeServiceIntegration extends BinanceExchangeIntegration {
 //    OpenOrders orders = tradeService.getOpenMarginOrders();
 //    System.out.println("order: " + orderId + " orders: " + orders);
 //    //tradeService.cancelMarginOrder(new BinanceCancelOrderParams(limitOrder.getCurrencyPair(), orderId));
-  }
+//  }
 
 //  @Test
 //  public void testPlaceTestOrderLimitOrderShouldNotThrowAnyException() throws IOException {
