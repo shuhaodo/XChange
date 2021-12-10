@@ -32,6 +32,8 @@ class BinanceUserDataChannel implements AutoCloseable {
   private final Disposable keepAlive;
 
   private String listenKey;
+  private String spotListenKey;
+  private String marginListenKey;
   private Consumer<String> onChangeListenKey;
 
   /**
@@ -61,15 +63,18 @@ class BinanceUserDataChannel implements AutoCloseable {
   }
 
   private void keepAlive() {
-    if (listenKey == null) return;
+    if (listenKey == null || spotListenKey == null || marginListenKey == null) return;
     try {
       LOG.debug("Keeping user data channel alive");
       onApiCall.run();
-      binance.keepAliveUserDataStream(apiKey, listenKey);
+      binance.keepAliveUserDataStream(apiKey, spotListenKey);
+      binance.keepAliveMarginUserDataStream(apiKey, marginListenKey);
       LOG.debug("User data channel keepalive sent successfully");
     } catch (Exception e) {
       LOG.error("User data channel keepalive failed.", e);
       this.listenKey = null;
+      this.spotListenKey = null;
+      this.marginListenKey = null;
       reconnect();
     }
   }
@@ -90,7 +95,9 @@ class BinanceUserDataChannel implements AutoCloseable {
     try {
       LOG.debug("Opening new user data channel");
       onApiCall.run();
-      this.listenKey = binance.startUserDataStream(apiKey).getListenKey();
+      this.spotListenKey = binance.startUserDataStream(apiKey).getListenKey();
+      this.marginListenKey = binance.startMarginUserDataStream(apiKey).getListenKey();
+      this.listenKey = spotListenKey + "/" + marginListenKey;
       LOG.debug("Opened new user data channel");
     } catch (IOException e) {
       throw new RuntimeException(e);

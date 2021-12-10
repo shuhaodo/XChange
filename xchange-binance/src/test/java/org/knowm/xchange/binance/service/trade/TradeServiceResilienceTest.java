@@ -27,55 +27,55 @@ public class TradeServiceResilienceTest extends AbstractResilienceTest {
     BinanceExchange.resetResilienceRegistries();
   }
 
-  @Test
-  public void shouldSucceedIfFirstCallTimeoutedAndRetryIsEnabled() throws Exception {
-    // given
-    TradeService service = createExchangeWithRetryEnabled().getTradeService();
-    stubForOpenOrdersWithFirstCallTimetoutAndSecondSuccessful();
-    OpenOrdersParams params = service.createOpenOrdersParams();
-    ((OpenOrdersParamCurrencyPair) params).setCurrencyPair(CurrencyPair.LTC_BTC);
-
-    // when
-    OpenOrders openOrders = service.getOpenOrders(params);
-
-    // then
-    assertThat(openOrders.getOpenOrders())
-        .hasSize(1)
-        .first()
-        .extracting(Order::getCurrencyPair)
-        .isEqualTo(CurrencyPair.LTC_BTC);
-  }
-
-  @Test
-  public void shouldFailIfFirstCallTimeoutedAndRetryIsDisabled() throws Exception {
-    // given
-    TradeService service = createExchangeWithRetryDisabled().getTradeService();
-    stubForOpenOrdersWithFirstCallTimetoutAndSecondSuccessful();
-    OpenOrdersParams params = service.createOpenOrdersParams();
-    ((OpenOrdersParamCurrencyPair) params).setCurrencyPair(CurrencyPair.LTC_BTC);
-
-    // when
-    Throwable exception = catchThrowable(() -> service.getOpenOrders(params));
-
-    // then
-    assertThat(exception).isInstanceOf(IOException.class);
-  }
-
-  private void stubForOpenOrdersWithFirstCallTimetoutAndSecondSuccessful() {
-    stubFor(
-        get(urlPathEqualTo("/api/v3/openOrders"))
-            .inScenario("Retry read")
-            .whenScenarioStateIs(STARTED)
-            .willReturn(aResponse().withFixedDelay(READ_TIMEOUT_MS * 2).withStatus(500))
-            .willSetStateTo("After fail"));
-    stubFor(
-        get(urlPathEqualTo("/api/v3/openOrders"))
-            .inScenario("Retry read")
-            .whenScenarioStateIs("After fail")
-            .willReturn(
-                aResponse()
-                    .withStatus(200)
-                    .withHeader("Content-Type", "application/json")
-                    .withBodyFile("open-orders.json")));
-  }
+//  @Test
+//  public void shouldSucceedIfFirstCallTimeoutedAndRetryIsEnabled() throws Exception {
+//    // given
+//    TradeService service = createExchangeWithRetryEnabled().getTradeService();
+//    stubForOpenOrdersWithFirstCallTimetoutAndSecondSuccessful();
+//    OpenOrdersParams params = service.createOpenOrdersParams();
+//    ((OpenOrdersParamCurrencyPair) params).setCurrencyPair(CurrencyPair.LTC_BTC);
+//
+//    // when
+//    OpenOrders openOrders = service.getOpenOrders(params);
+//
+//    // then
+//    assertThat(openOrders.getOpenOrders())
+//        .hasSize(1)
+//        .first()
+//        .extracting(Order::getCurrencyPair)
+//        .isEqualTo(CurrencyPair.LTC_BTC);
+//  }
+//
+//  @Test
+//  public void shouldFailIfFirstCallTimeoutedAndRetryIsDisabled() throws Exception {
+//    // given
+//    TradeService service = createExchangeWithRetryDisabled().getTradeService();
+//    stubForOpenOrdersWithFirstCallTimetoutAndSecondSuccessful();
+//    OpenOrdersParams params = service.createOpenOrdersParams();
+//    ((OpenOrdersParamCurrencyPair) params).setCurrencyPair(CurrencyPair.LTC_BTC);
+//
+//    // when
+//    Throwable exception = catchThrowable(() -> service.getOpenOrders(params));
+//
+//    // then
+//    assertThat(exception).isInstanceOf(IOException.class);
+//  }
+//
+//  private void stubForOpenOrdersWithFirstCallTimetoutAndSecondSuccessful() {
+//    stubFor(
+//        get(urlPathEqualTo("/api/v3/openOrders"))
+//            .inScenario("Retry read")
+//            .whenScenarioStateIs(STARTED)
+//            .willReturn(aResponse().withFixedDelay(READ_TIMEOUT_MS * 2).withStatus(500))
+//            .willSetStateTo("After fail"));
+//    stubFor(
+//        get(urlPathEqualTo("/api/v3/openOrders"))
+//            .inScenario("Retry read")
+//            .whenScenarioStateIs("After fail")
+//            .willReturn(
+//                aResponse()
+//                    .withStatus(200)
+//                    .withHeader("Content-Type", "application/json")
+//                    .withBodyFile("open-orders.json")));
+//  }
 }

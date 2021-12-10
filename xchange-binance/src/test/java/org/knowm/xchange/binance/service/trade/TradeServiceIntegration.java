@@ -49,7 +49,7 @@ public class TradeServiceIntegration extends BinanceExchangeIntegration {
 //    OpenOrders orders = tradeService.getOpenMarginOrders();
 //    System.out.println("order: " + orderId + " orders: " + orders);
 //  }
-//
+
 //  @Test
 //  public void testPlaceMarginLimitOrder() throws Exception {
 //    final LimitOrder limitOrder = sampleLimitOrder();
@@ -65,12 +65,12 @@ public class TradeServiceIntegration extends BinanceExchangeIntegration {
 //
 //    tradeService.placeTestOrder(LIMIT, limitOrder, limitOrder.getLimitPrice(), null);
 //  }
-//
+
   private LimitOrder sampleLimitOrder() throws IOException {
     final CurrencyPair currencyPair = CurrencyPair.ZEC_USDT;
     final BigDecimal amount = BigDecimal.valueOf(0.1);
     final BigDecimal limitPrice = BigDecimal.valueOf(170.0);
-    return new LimitOrder.Builder(BID, currencyPair)
+    return new LimitOrder.Builder(ASK, currencyPair)
         .originalAmount(amount)
         .limitPrice(limitPrice)
         .flag(clientOrderId)
@@ -78,8 +78,8 @@ public class TradeServiceIntegration extends BinanceExchangeIntegration {
   }
   private MarketOrder sampleMarketOrder() {
     final CurrencyPair currencyPair = CurrencyPair.ZEC_USDT;
-    final BigDecimal amount = BigDecimal.valueOf(0.1);
-    return new MarketOrder.Builder(ASK, currencyPair)
+    final BigDecimal amount = BigDecimal.valueOf(0.11);
+    return new MarketOrder.Builder(BID, currencyPair)
             .originalAmount(amount)
             .flag(clientOrderId)
             .build();

@@ -14,7 +14,7 @@ public class BinanceUserDataStreamingService extends JsonNettyStreamingService {
 
   private static final Logger LOG = LoggerFactory.getLogger(BinanceUserDataStreamingService.class);
 
-  private static final String USER_API_BASE_URI = "wss://stream.binance.com:9443/ws/";
+  private static final String USER_API_BASE_URI = "wss://stream.binance.com:9443/stream?streams=";
 
   public static BinanceUserDataStreamingService create(String listenKey) {
     return new BinanceUserDataStreamingService(USER_API_BASE_URI + listenKey);
@@ -37,16 +37,29 @@ public class BinanceUserDataStreamingService extends JsonNettyStreamingService {
   @Override
   protected void handleMessage(JsonNode message) {
     try {
-      super.handleMessage(message);
+      JsonNode data = message.get("data");
+      if (data != null) {
+        super.handleMessage(data);
+      } else {
+        super.handleMessage(message);
+      }
     } catch (Exception e) {
       LOG.error("Error handling message: " + message, e);
-      return;
     }
   }
 
   @Override
   protected String getChannelNameFromMessage(JsonNode message) throws IOException {
-    return message.get("e").asText();
+    if (message.get("e") != null) {
+      return message.get("e").asText();
+    }
+
+    JsonNode data = message.get("data");
+    if (data != null && data.get("e") != null) {
+      return data.get("e").asText();
+    } else {
+      return "";
+    }
   }
 
   @Override

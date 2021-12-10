@@ -563,4 +563,22 @@ public interface BinanceAuthenticated extends Binance {
   Map<?, ?> closeUserDataStream(
       @HeaderParam(X_MBX_APIKEY) String apiKey, @PathParam("listenKey") String listenKey)
       throws IOException, BinanceException;
+
+  @POST
+  @Path("/sapi/v1/userDataStream")
+  BinanceListenKey startMarginUserDataStream(@HeaderParam(X_MBX_APIKEY) String apiKey)
+          throws IOException, BinanceException;
+
+  @PUT
+  @Path("/sapi/v1/userDataStream?listenKey={listenKey}")
+  Map<?, ?> keepAliveMarginUserDataStream(
+          @HeaderParam(X_MBX_APIKEY) String apiKey, @PathParam("listenKey") String listenKey)
+          throws IOException, BinanceException;
+
+
+  @DELETE
+  @Path("/sapi/v1/userDataStream?listenKey={listenKey}")
+  Map<?, ?> closeMarginUserDataStream(
+          @HeaderParam(X_MBX_APIKEY) String apiKey, @PathParam("listenKey") String listenKey)
+          throws IOException, BinanceException;
 }

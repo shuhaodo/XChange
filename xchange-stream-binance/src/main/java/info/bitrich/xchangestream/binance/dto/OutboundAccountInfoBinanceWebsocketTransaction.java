@@ -100,6 +100,7 @@ public class OutboundAccountInfoBinanceWebsocketTransaction
                     BigDecimal.ZERO,
                     BigDecimal.ZERO,
                     BigDecimal.ZERO,
+                    BigDecimal.ZERO,
                     new Date(lastUpdateTimestamp)))
         .collect(Collectors.toList());
   }
