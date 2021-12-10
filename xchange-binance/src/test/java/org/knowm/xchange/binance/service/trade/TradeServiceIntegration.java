@@ -32,39 +32,26 @@ public class TradeServiceIntegration extends BinanceExchangeIntegration {
   static BinanceTradeService tradeService;
   private final Order.IOrderFlags clientOrderId = BinanceTradeService.BinanceOrderFlags.withClientId("apple");
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    createExchange();
+  public static void main(String[] args) throws Exception {
+    TradeServiceIntegration test = new TradeServiceIntegration();
+    test.createExchange();
     tradeService = (BinanceTradeService) exchange.getTradeService();
+    test.placeMarginLimitOrder();
   }
 
-  @Before
-  public void before() {
-    Assume.assumeNotNull(exchange.getExchangeSpecification().getApiKey());
+  public void placeMarginMarketOrder() throws Exception {
+    String orderId = tradeService.placeMarketMarginOrder(sampleMarketOrder());
+    OpenOrders orders = tradeService.getOpenMarginOrders();
+    System.out.println("market order: " + orderId + " orders: " + orders);
   }
 
-//  @Test
-//  public void testPlaceMarginMarketOrder() throws Exception {
-//    String orderId = tradeService.placeMarketMarginOrder(sampleMarketOrder());
-//    OpenOrders orders = tradeService.getOpenMarginOrders();
-//    System.out.println("order: " + orderId + " orders: " + orders);
-//  }
-
-//  @Test
-//  public void testPlaceMarginLimitOrder() throws Exception {
-//    final LimitOrder limitOrder = sampleLimitOrder();
-//    String orderId = tradeService.placeLimitMarginOrder(limitOrder);
-//    OpenOrders orders = tradeService.getOpenMarginOrders();
-//    System.out.println("order: " + orderId + " orders: " + orders);
-//    //tradeService.cancelMarginOrder(new BinanceCancelOrderParams(limitOrder.getCurrencyPair(), orderId));
-//  }
-
-//  @Test
-//  public void testPlaceTestOrderLimitOrderShouldNotThrowAnyException() throws IOException {
-//    final LimitOrder limitOrder = sampleLimitOrder();
-//
-//    tradeService.placeTestOrder(LIMIT, limitOrder, limitOrder.getLimitPrice(), null);
-//  }
+  private void placeMarginLimitOrder() throws Exception {
+    final LimitOrder limitOrder = sampleLimitOrder();
+    String orderId = tradeService.placeLimitMarginOrder(limitOrder);
+    OpenOrders orders = tradeService.getOpenMarginOrders();
+    System.out.println("limit order: " + orderId + " orders: " + orders);
+    //tradeService.cancelMarginOrder(new BinanceCancelOrderParams(limitOrder.getCurrencyPair(), orderId));
+  }
 
   private LimitOrder sampleLimitOrder() throws IOException {
     final CurrencyPair currencyPair = CurrencyPair.ZEC_USDT;
@@ -84,76 +71,4 @@ public class TradeServiceIntegration extends BinanceExchangeIntegration {
             .flag(clientOrderId)
             .build();
   }
-
-//
-//  private BigDecimal limitPriceForCurrencyPair(CurrencyPair currencyPair) throws IOException {
-//    return exchange
-//        .getMarketDataService()
-//        .getOrderBook(currencyPair)
-//        .getAsks()
-//        .get(0)
-//        .getLimitPrice();
-//  }
-//
-//  @Test
-//  public void testPlaceTestOrderMarketOrderShouldNotThrowAnyException() throws IOException {
-//    final MarketOrder marketOrder = sampleMarketOrder();
-//
-//    tradeService.placeTestOrder(MARKET, marketOrder, null, null);
-//  }
-//
-
-
-//  @Test
-//  public void testPlaceTestOrderStopLossLimitOrderShouldNotThrowAnyException() throws IOException {
-//    final StopOrder stopLimitOrder = sampleStopLimitOrder();
-//
-//    tradeService.placeTestOrder(
-//        STOP_LOSS_LIMIT,
-//        stopLimitOrder,
-//        stopLimitOrder.getLimitPrice(),
-//        stopLimitOrder.getStopPrice());
-//  }
-//
-//  private StopOrder sampleStopLimitOrder() throws IOException {
-//    final CurrencyPair currencyPair = CurrencyPair.BTC_USDT;
-//    final BigDecimal amount = BigDecimal.ONE;
-//    final BigDecimal limitPrice = limitPriceForCurrencyPair(currencyPair);
-//    final BigDecimal stopPrice =
-//        limitPrice.multiply(new BigDecimal("0.9")).setScale(2, RoundingMode.HALF_UP);
-//    return new StopOrder.Builder(BID, currencyPair)
-//        .originalAmount(amount)
-//        .limitPrice(limitPrice)
-//        .stopPrice(stopPrice)
-//        .intention(StopOrder.Intention.STOP_LOSS)
-//        .flag(TimeInForce.GTC)
-//        .build();
-//  }
-//
-//  @Test
-//  public void testPlaceTestOrderTakeProfitLimitOrderShouldNotThrowAnyException()
-//      throws IOException {
-//    final StopOrder takeProfitLimitOrder = sampleTakeProfitLimitOrder();
-//
-//    tradeService.placeTestOrder(
-//        TAKE_PROFIT_LIMIT,
-//        takeProfitLimitOrder,
-//        takeProfitLimitOrder.getLimitPrice(),
-//        takeProfitLimitOrder.getStopPrice());
-//  }
-//
-//  private StopOrder sampleTakeProfitLimitOrder() throws IOException {
-//    final CurrencyPair currencyPair = CurrencyPair.BTC_USDT;
-//    final BigDecimal amount = BigDecimal.ONE;
-//    final BigDecimal limitPrice = limitPriceForCurrencyPair(currencyPair);
-//    final BigDecimal takeProfitPrice =
-//        limitPrice.multiply(new BigDecimal("1.1")).setScale(2, RoundingMode.HALF_UP);
-//    return new StopOrder.Builder(BID, currencyPair)
-//        .originalAmount(amount)
-//        .stopPrice(takeProfitPrice)
-//        .limitPrice(limitPrice)
-//        .intention(StopOrder.Intention.TAKE_PROFIT)
-//        .flag(TimeInForce.GTC)
-//        .build();
-//  }
 }

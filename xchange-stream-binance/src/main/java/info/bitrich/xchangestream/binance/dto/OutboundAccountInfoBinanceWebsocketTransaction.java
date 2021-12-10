@@ -10,6 +10,7 @@ import org.knowm.xchange.dto.account.Balance;
 public class OutboundAccountInfoBinanceWebsocketTransaction
     extends BaseBinanceWebSocketTransaction {
 
+  private final String wallet;
   private final BigDecimal makerCommissionRate;
   private final BigDecimal takerCommissionRate;
   private final BigDecimal buyerCommissionRate;
@@ -22,6 +23,7 @@ public class OutboundAccountInfoBinanceWebsocketTransaction
   private List<String> permissions;
 
   public OutboundAccountInfoBinanceWebsocketTransaction(
+      @JsonProperty("wallet") String wallet, //SPOT or MARGIN
       @JsonProperty("e") String eventType,
       @JsonProperty("E") String eventTime,
       @JsonProperty("m") BigDecimal makerCommissionRate,
@@ -35,6 +37,7 @@ public class OutboundAccountInfoBinanceWebsocketTransaction
       @JsonProperty("B") List<BinanceWebsocketBalance> balances,
       @JsonProperty("P") List<String> permissions) {
     super(eventType, eventTime);
+    this.wallet = wallet;
     this.makerCommissionRate = makerCommissionRate;
     this.takerCommissionRate = takerCommissionRate;
     this.buyerCommissionRate = buyerCommissionRate;
@@ -90,18 +93,21 @@ public class OutboundAccountInfoBinanceWebsocketTransaction
   public List<Balance> toBalanceList() {
     return balances.stream()
         .map(
-            b ->
-                new Balance(
-                    b.getCurrency(),
-                    b.getTotal(),
-                    b.getAvailable(),
-                    b.getLocked(),
-                    BigDecimal.ZERO,
-                    BigDecimal.ZERO,
-                    BigDecimal.ZERO,
-                    BigDecimal.ZERO,
-                    BigDecimal.ZERO,
-                    new Date(lastUpdateTimestamp)))
+            b -> {
+              Balance balance = new Balance(
+                      b.getCurrency(),
+                      b.getTotal(),
+                      b.getAvailable(),
+                      b.getLocked(),
+                      BigDecimal.ZERO,
+                      BigDecimal.ZERO,
+                      BigDecimal.ZERO,
+                      BigDecimal.ZERO,
+                      BigDecimal.ZERO,
+                      new Date(lastUpdateTimestamp));
+              balance.wallet = wallet == null ? "SPOT" : wallet;
+              return balance;
+            })
         .collect(Collectors.toList());
   }
 
@@ -127,6 +133,8 @@ public class OutboundAccountInfoBinanceWebsocketTransaction
         + balances
         + ", permissions="
         + permissions
+        + ", wallet="
+        + wallet
         + "]";
   }
 }

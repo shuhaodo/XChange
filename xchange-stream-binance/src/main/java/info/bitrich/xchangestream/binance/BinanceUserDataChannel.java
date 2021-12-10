@@ -5,6 +5,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.knowm.xchange.binance.BinanceAuthenticated;
@@ -31,14 +32,13 @@ class BinanceUserDataChannel implements AutoCloseable {
   private final Runnable onApiCall;
   private final Disposable keepAlive;
 
-  private String listenKey;
   private String spotListenKey;
   private String marginListenKey;
-  private Consumer<String> onChangeListenKey;
+  private Consumer<String[]> onChangeListenKey;
 
   /**
    * Creates the channel, establishing a listen key (immediately available from {@link
-   * #getListenKey()}) and starting timers to ensure the channel is kept alive.
+   * #getListenKeys()}) and starting timers to ensure the channel is kept alive.
    *
    * @param binance Access to binance services.
    * @param apiKey The API key.
@@ -58,12 +58,12 @@ class BinanceUserDataChannel implements AutoCloseable {
    *
    * @param onChangeListenKey The callback.
    */
-  void onChangeListenKey(Consumer<String> onChangeListenKey) {
+  void onChangeListenKey(Consumer<String[]> onChangeListenKey) {
     this.onChangeListenKey = onChangeListenKey;
   }
 
   private void keepAlive() {
-    if (listenKey == null || spotListenKey == null || marginListenKey == null) return;
+    if (spotListenKey == null || marginListenKey == null) return;
     try {
       LOG.debug("Keeping user data channel alive");
       onApiCall.run();
@@ -72,7 +72,6 @@ class BinanceUserDataChannel implements AutoCloseable {
       LOG.debug("User data channel keepalive sent successfully");
     } catch (Exception e) {
       LOG.error("User data channel keepalive failed.", e);
-      this.listenKey = null;
       this.spotListenKey = null;
       this.marginListenKey = null;
       reconnect();
@@ -83,7 +82,7 @@ class BinanceUserDataChannel implements AutoCloseable {
     try {
       openChannel();
       if (onChangeListenKey != null) {
-        onChangeListenKey.accept(this.listenKey);
+        onChangeListenKey.accept(getListenKeys());
       }
     } catch (Exception e) {
       LOG.error("Failed to reconnect. Will retry in 15 seconds.", e);
@@ -97,7 +96,6 @@ class BinanceUserDataChannel implements AutoCloseable {
       onApiCall.run();
       this.spotListenKey = binance.startUserDataStream(apiKey).getListenKey();
       this.marginListenKey = binance.startMarginUserDataStream(apiKey).getListenKey();
-      this.listenKey = spotListenKey + "/" + marginListenKey;
       LOG.debug("Opened new user data channel");
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -108,9 +106,10 @@ class BinanceUserDataChannel implements AutoCloseable {
    * @return The current listen key.
    * @throws NoActiveChannelException If no listen key is currently available.
    */
-  String getListenKey() throws NoActiveChannelException {
-    if (listenKey == null) throw new NoActiveChannelException();
-    return listenKey;
+  String[] getListenKeys() throws NoActiveChannelException {
+    if (spotListenKey == null || marginListenKey == null) throw new NoActiveChannelException();
+    String[] keys = {this.spotListenKey, this.marginListenKey};
+    return keys;
   }
 
   @Override
@@ -119,7 +118,7 @@ class BinanceUserDataChannel implements AutoCloseable {
   }
 
   /**
-   * Thrown on calls to {@link BinanceUserDataChannel#getListenKey()} if no channel is currently
+   * Thrown on calls to {@link BinanceUserDataChannel#getListenKeys()} if no channel is currently
    * open.
    *
    * @author Graham Crockford

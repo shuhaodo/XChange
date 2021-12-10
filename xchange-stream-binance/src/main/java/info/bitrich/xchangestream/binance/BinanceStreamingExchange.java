@@ -95,7 +95,7 @@ public class BinanceStreamingExchange extends BinanceExchange implements Streami
       userDataChannel =
           new BinanceUserDataChannel(binance, exchangeSpecification.getApiKey(), onApiCall);
       try {
-        completables.add(createAndConnectUserDataService(userDataChannel.getListenKey()));
+        completables.add(createAndConnectUserDataService(userDataChannel.getListenKeys()));
       } catch (NoActiveChannelException e) {
         throw new IllegalStateException("Failed to establish user data channel", e);
       }
@@ -117,20 +117,20 @@ public class BinanceStreamingExchange extends BinanceExchange implements Streami
         .doOnComplete(() -> streamingTradeService.openSubscriptions());
   }
 
-  private Completable createAndConnectUserDataService(String listenKey) {
-    userDataStreamingService = BinanceUserDataStreamingService.create(listenKey);
+  private Completable createAndConnectUserDataService(String[] listenKeys) {
+    userDataStreamingService = BinanceUserDataStreamingService.create(listenKeys);
     return userDataStreamingService
         .connect()
         .doOnComplete(
             () -> {
               LOG.info("Connected to authenticated web socket");
               userDataChannel.onChangeListenKey(
-                  newListenKey -> {
+                  newListenKeys -> {
                     userDataStreamingService
                         .disconnect()
                         .doOnComplete(
                             () -> {
-                              createAndConnectUserDataService(newListenKey)
+                              createAndConnectUserDataService(newListenKeys)
                                   .doOnComplete(
                                       () -> {
                                         streamingAccountService.setUserDataStreamingService(

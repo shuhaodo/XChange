@@ -1,12 +1,14 @@
 package info.bitrich.xchangestream.binance;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import info.bitrich.xchangestream.binance.dto.BaseBinanceWebSocketTransaction.BinanceWebSocketTypes;
 import info.bitrich.xchangestream.service.netty.JsonNettyStreamingService;
 import info.bitrich.xchangestream.service.netty.WebSocketClientCompressionAllowClientNoContextAndServerNoContextHandler;
 import io.netty.handler.codec.http.websocketx.extensions.WebSocketClientExtensionHandler;
 import io.reactivex.Observable;
 import java.io.IOException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,13 +17,20 @@ public class BinanceUserDataStreamingService extends JsonNettyStreamingService {
   private static final Logger LOG = LoggerFactory.getLogger(BinanceUserDataStreamingService.class);
 
   private static final String USER_API_BASE_URI = "wss://stream.binance.com:9443/stream?streams=";
+  private String spotListenKey = "";
+  private String marginListenKey = "";
 
-  public static BinanceUserDataStreamingService create(String listenKey) {
-    return new BinanceUserDataStreamingService(USER_API_BASE_URI + listenKey);
+  public static BinanceUserDataStreamingService create(String[] listenKeys) {
+    String spotListenKey = listenKeys[0];
+    String marginListenKey = listenKeys[1];
+    String url = USER_API_BASE_URI + spotListenKey + "/" + marginListenKey;
+    return new BinanceUserDataStreamingService(spotListenKey, marginListenKey, url);
   }
 
-  private BinanceUserDataStreamingService(String url) {
+  private BinanceUserDataStreamingService(String spotListenKey, String marginListenKey, String url) {
     super(url, Integer.MAX_VALUE);
+    this.spotListenKey = spotListenKey;
+    this.marginListenKey = marginListenKey;
   }
 
   public Observable<JsonNode> subscribeChannel(BinanceWebSocketTypes eventType) {
@@ -39,7 +48,14 @@ public class BinanceUserDataStreamingService extends JsonNettyStreamingService {
     try {
       JsonNode data = message.get("data");
       if (data != null) {
-        super.handleMessage(data);
+        if (message.get("stream") != null) {
+          String stream = message.get("stream").asText();
+          ObjectNode n = (ObjectNode) data;
+          n.put("wallet", stream.equals(marginListenKey) ? "MARGIN" : "SPOT");
+          super.handleMessage(n);
+        } else {
+          super.handleMessage(data);
+        }
       } else {
         super.handleMessage(message);
       }

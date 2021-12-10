@@ -42,6 +42,12 @@ public class BinanceManualExample {
 
     LOG.info("Subscribing public channels");
 
+    exchange.getStreamingAccountService().getBalanceChanges(Currency.USDT).subscribe(
+            balance -> {
+              LOG.info(balance.toString());
+            }
+    );
+
 //    Disposable tickers =
 //        exchange
 //            .getStreamingMarketDataService()

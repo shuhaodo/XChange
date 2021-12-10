@@ -38,6 +38,9 @@ public final class Balance implements Comparable<Balance>, Serializable {
   private final BigDecimal interest;
   private final Date timestamp;
 
+  @JsonIgnore
+  public String wallet = "SPOT"; //default
+
   /**
    * Constructs a balance, the {@link #available} will be the same as the <code>total</code>, and
    * the {@link #frozen} is zero. The <code>borrowed</code> and <code>loaned</code> will be zero.
@@ -383,6 +386,8 @@ public final class Balance implements Comparable<Balance>, Serializable {
         + depositing
         + ", timestamp="
         + timestamp
+        + ", wallet="
+        + wallet
         + '}';
   }
 
