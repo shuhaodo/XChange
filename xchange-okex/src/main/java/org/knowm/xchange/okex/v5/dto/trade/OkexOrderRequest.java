@@ -16,7 +16,7 @@ public class OkexOrderRequest {
   @JsonProperty("ccy")
   private String marginCurrency;
 
-  @JsonProperty("clOrderId")
+  @JsonProperty("clOrdId")
   private String clientOrderId;
 
   @JsonProperty("tag")
@@ -39,4 +39,7 @@ public class OkexOrderRequest {
 
   @JsonProperty("reduceOnly")
   private boolean reducePosition;
+
+  @JsonProperty("tgtCcy")
+  private String targetCurrency;
 }

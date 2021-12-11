@@ -34,12 +34,7 @@ import org.knowm.xchange.exceptions.ExchangeException;
 import org.knowm.xchange.exceptions.NotAvailableFromExchangeException;
 import org.knowm.xchange.service.trade.TradeService;
 import org.knowm.xchange.service.trade.params.*;
-import org.knowm.xchange.service.trade.params.orders.DefaultOpenOrdersParam;
-import org.knowm.xchange.service.trade.params.orders.DefaultOpenOrdersParamCurrencyPair;
-import org.knowm.xchange.service.trade.params.orders.OpenOrdersParamCurrencyPair;
-import org.knowm.xchange.service.trade.params.orders.OpenOrdersParams;
-import org.knowm.xchange.service.trade.params.orders.OrderQueryParamCurrencyPair;
-import org.knowm.xchange.service.trade.params.orders.OrderQueryParams;
+import org.knowm.xchange.service.trade.params.orders.*;
 import org.knowm.xchange.utils.Assert;
 
 public class BinanceTradeService extends BinanceTradeServiceRaw implements TradeService {
@@ -49,11 +44,6 @@ public class BinanceTradeService extends BinanceTradeServiceRaw implements Trade
       BinanceAuthenticated binance,
       ResilienceRegistries resilienceRegistries) {
     super(exchange, binance, resilienceRegistries);
-  }
-
-  @Override
-  public OpenOrders getOpenMarginOrders() throws IOException {
-    return doGetOpenOrders(new DefaultOpenOrdersParam(), true);
   }
 
   @Override
@@ -67,20 +57,24 @@ public class BinanceTradeService extends BinanceTradeServiceRaw implements Trade
 
   @Override
   public OpenOrders getOpenOrders(OpenOrdersParams params) throws IOException {
-    return doGetOpenOrders(params, false);
+    return doGetOpenOrders(params);
   }
 
-  private OpenOrders doGetOpenOrders(OpenOrdersParams params, boolean isMargin) throws IOException {
+  private OpenOrders doGetOpenOrders(OpenOrdersParams params) throws IOException {
     try {
       List<BinanceOrder> binanceOpenOrders;
+      List<BinanceOrder> binanceMarginOrders;
       if (params instanceof OpenOrdersParamCurrencyPair) {
         OpenOrdersParamCurrencyPair pairParams = (OpenOrdersParamCurrencyPair) params;
         CurrencyPair pair = pairParams.getCurrencyPair();
-        binanceOpenOrders = isMargin ? super.openMarginOrders(pair) : super.openOrders(pair);
+        binanceOpenOrders = super.openOrders(pair);
+        binanceMarginOrders = super.openMarginOrders(pair);
       } else {
-        binanceOpenOrders = isMargin ? super.openMarginOrders() : super.openOrders();
+        binanceOpenOrders = super.openOrders();
+        binanceMarginOrders = super.openMarginOrders();
       }
 
+      binanceOpenOrders.addAll(binanceMarginOrders);
       List<LimitOrder> limitOrders = new ArrayList<>();
       List<Order> otherOrders = new ArrayList<>();
       binanceOpenOrders.forEach(
@@ -100,7 +94,11 @@ public class BinanceTradeService extends BinanceTradeServiceRaw implements Trade
 
   @Override
   public String placeMarketOrder(MarketOrder mo) throws IOException {
-    return placeOrder(OrderType.MARKET, mo, null, null, null);
+    if (mo.hasFlag(Order.TradeModeFlags.MARGIN)) {
+      return placeMarginOrder(OrderType.MARKET, mo, null, null, null);
+    } else {
+      return placeOrder(OrderType.MARKET, mo, null, null, null);
+    }
   }
 
   @Override
@@ -113,25 +111,12 @@ public class BinanceTradeService extends BinanceTradeServiceRaw implements Trade
     } else {
       type = OrderType.LIMIT;
     }
-    return placeOrder(type, limitOrder, limitOrder.getLimitPrice(), null, tif);
-  }
 
-  @Override
-  public String placeMarketMarginOrder(MarketOrder mo) throws IOException {
-    return placeMarginOrder(OrderType.MARKET, mo, null, null, null);
-  }
-
-  @Override
-  public String placeLimitMarginOrder(LimitOrder limitOrder) throws IOException {
-    TimeInForce tif = timeInForceFromOrder(limitOrder).orElse(TimeInForce.GTC);
-    OrderType type;
-    if (limitOrder.hasFlag(org.knowm.xchange.binance.dto.trade.BinanceOrderFlags.LIMIT_MAKER)) {
-      type = OrderType.LIMIT_MAKER;
-      tif = null;
+    if (limitOrder.hasFlag(Order.TradeModeFlags.MARGIN)) {
+      return placeMarginOrder(type, limitOrder, limitOrder.getLimitPrice(), null, tif);
     } else {
-      type = OrderType.LIMIT;
+      return placeOrder(type, limitOrder, limitOrder.getLimitPrice(), null, tif);
     }
-    return placeMarginOrder(type, limitOrder, limitOrder.getLimitPrice(), null, tif);
   }
 
   @Override
@@ -227,16 +212,7 @@ public class BinanceTradeService extends BinanceTradeServiceRaw implements Trade
 
   private String getClientOrderId(Order order) {
 
-    String clientOrderId = null;
-    for (IOrderFlags flags : order.getOrderFlags()) {
-      if (flags instanceof BinanceOrderFlags) {
-        BinanceOrderFlags bof = (BinanceOrderFlags) flags;
-        if (clientOrderId == null) {
-          clientOrderId = bof.getClientId();
-        }
-      }
-    }
-    return clientOrderId;
+    return order.getUserReference();
   }
 
   @Override
@@ -245,36 +221,25 @@ public class BinanceTradeService extends BinanceTradeServiceRaw implements Trade
   }
 
   @Override
-  public boolean cancelMarginOrder(CancelOrderParams params) throws IOException {
-    return cancelOrder(params, true);
-  }
-
-  @Override
   public boolean cancelOrder(CancelOrderParams params) throws IOException {
-    return cancelOrder(params, false);
-  }
-
-  private boolean cancelOrder(CancelOrderParams params, boolean isMargin) throws IOException {
     try {
-      if (!(params instanceof CancelOrderByCurrencyPair)
-          && !(params instanceof CancelOrderByIdParams)) {
+      if (!(params instanceof DefaultCancelOrderParams)) {
         throw new ExchangeException(
-            "You need to provide the currency pair and the order id to cancel an order.");
+            "params must be DefaultCancelOrderParams");
       }
-      CancelOrderByCurrencyPair paramCurrencyPair = (CancelOrderByCurrencyPair) params;
-      CancelOrderByIdParams paramId = (CancelOrderByIdParams) params;
-      CancelOrderByUserReferenceParams clientId = (CancelOrderByUserReferenceParams) params;
-      if (isMargin) {
+      DefaultCancelOrderParams param = (DefaultCancelOrderParams) params;
+      CurrencyPair pair = (CurrencyPair)param.getInstrument();
+      if (param.getIsMarginOrder()) {
         super.cancelMarginOrder(
-                paramCurrencyPair.getCurrencyPair(),
-                paramId.getOrderId(),
-                clientId.getUserReference(),
+                pair,
+                param.getOrderId(),
+                param.getUserReference(),
                 null);
       } else {
         super.cancelOrder(
-                paramCurrencyPair.getCurrencyPair(),
-                paramId.getOrderId(),
-                clientId.getUserReference(),
+                pair,
+                param.getOrderId(),
+                param.getUserReference(),
                 null);
       }
       return true;
@@ -372,25 +337,33 @@ public class BinanceTradeService extends BinanceTradeServiceRaw implements Trade
   public Collection<Order> getOrder(OrderQueryParams... params) throws IOException {
     try {
       Collection<Order> orders = new ArrayList<>();
-      for (OrderQueryParams param : params) {
-        if (!(param instanceof OrderQueryParamCurrencyPair)) {
+      for (OrderQueryParams p : params) {
+        if (!(p instanceof DefaultQueryOrderParams)) {
           throw new ExchangeException(
-              "Parameters must be an instance of OrderQueryParamCurrencyPair");
+              "Parameters must be an instance of DefaultQueryOrderParams");
         }
-        OrderQueryParamCurrencyPair orderQueryParamCurrencyPair =
-            (OrderQueryParamCurrencyPair) param;
-        if (orderQueryParamCurrencyPair.getCurrencyPair() == null
-            || orderQueryParamCurrencyPair.getOrderId() == null) {
+        DefaultQueryOrderParams param = (DefaultQueryOrderParams) p;
+        CurrencyPair currencyPair = (CurrencyPair) param.getInstrument();
+        if (currencyPair == null
+                || (param.getOrderId() == null && param.getClientId() == null)) {
           throw new ExchangeException(
-              "You need to provide the currency pair and the order id to query an order.");
+              "You need to provide the currency pair and the order id or client id to query an order.");
         }
 
+        BinanceOrder orderStatus;
+        if (param.getIsMarginOrder()) {
+          orderStatus = super.marginOrderStatus(
+                  currencyPair,
+                  param.getOrderId(),
+                  param.getClientId());
+        } else {
+          orderStatus = super.orderStatus(
+                  currencyPair,
+                  param.getOrderId(),
+                  param.getClientId());
+        }
         orders.add(
-            BinanceAdapters.adaptOrder(
-                super.orderStatus(
-                    orderQueryParamCurrencyPair.getCurrencyPair(),
-                    BinanceAdapters.id(orderQueryParamCurrencyPair.getOrderId()),
-                    null)));
+            BinanceAdapters.adaptOrder(orderStatus));
       }
       return orders;
     } catch (BinanceException e) {

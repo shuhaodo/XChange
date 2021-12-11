@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.knowm.xchange.client.ResilienceRegistries;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.trade.LimitOrder;
+import org.knowm.xchange.dto.trade.MarketOrder;
 import org.knowm.xchange.dto.trade.OpenOrders;
 import org.knowm.xchange.exceptions.FundsExceededException;
 import org.knowm.xchange.instrument.Instrument;
@@ -17,11 +18,15 @@ import org.knowm.xchange.okex.v5.dto.OkexException;
 import org.knowm.xchange.okex.v5.dto.OkexResponse;
 import org.knowm.xchange.okex.v5.dto.trade.OkexCancelOrderRequest;
 import org.knowm.xchange.okex.v5.dto.trade.OkexOrderDetails;
+import org.knowm.xchange.okex.v5.dto.trade.OkexOrderRequest;
 import org.knowm.xchange.okex.v5.dto.trade.OkexOrderResponse;
 import org.knowm.xchange.service.trade.TradeService;
 import org.knowm.xchange.service.trade.params.CancelOrderByIdParams;
 import org.knowm.xchange.service.trade.params.CancelOrderByInstrument;
+import org.knowm.xchange.service.trade.params.CancelOrderByUserReferenceParams;
 import org.knowm.xchange.service.trade.params.CancelOrderParams;
+import org.knowm.xchange.service.trade.params.orders.DefaultQueryOrderParams;
+import org.knowm.xchange.service.trade.params.orders.OrderQueryParamClientId;
 import org.knowm.xchange.service.trade.params.orders.OrderQueryParamInstrument;
 import org.knowm.xchange.service.trade.params.orders.OrderQueryParams;
 
@@ -39,12 +44,13 @@ public class OkexTradeService extends OkexTradeServiceRaw implements TradeServic
 
   public Order getOrder(OrderQueryParams orderQueryParams) throws IOException {
     Order result = null;
-    if (orderQueryParams instanceof OrderQueryParamInstrument) {
+    if (orderQueryParams instanceof DefaultQueryOrderParams) {
       Instrument instrument = ((OrderQueryParamInstrument) orderQueryParams).getInstrument();
       String orderId = orderQueryParams.getOrderId();
+      String clientId = ((OrderQueryParamClientId) orderQueryParams).getClientId();
 
       List<OkexOrderDetails> orderResults =
-          getOkexOrder(OkexAdapters.adaptInstrumentId(instrument), orderId).getData();
+          getOkexOrder(OkexAdapters.adaptInstrumentId(instrument), orderId, clientId).getData();
 
       if (!orderResults.isEmpty()) {
         result = OkexAdapters.adaptOrder(orderResults.get(0));
@@ -68,25 +74,24 @@ public class OkexTradeService extends OkexTradeServiceRaw implements TradeServic
   }
 
   @Override
-  public String placeLimitOrder(LimitOrder limitOrder) throws IOException, FundsExceededException {
-    OkexResponse<List<OkexOrderResponse>> okexResponse =
-        placeOkexOrder(OkexAdapters.adaptOrder(limitOrder));
+  public String placeLimitOrder(LimitOrder order) throws IOException, FundsExceededException {
+    OkexOrderRequest request = OkexAdapters.adaptOrder(order);
+    return placeOrder(request);
+  }
 
+  @Override
+  public String placeMarketOrder(MarketOrder order) throws IOException, FundsExceededException {
+    OkexOrderRequest request = OkexAdapters.adaptOrder(order);
+    return placeOrder(request);
+  }
+
+  private String placeOrder(OkexOrderRequest request) throws IOException, FundsExceededException {
+    OkexResponse<List<OkexOrderResponse>> okexResponse = placeOkexOrder(request);
     if (okexResponse.isSuccess()) return okexResponse.getData().get(0).getOrderId();
     else
       throw new OkexException(
-          okexResponse.getData().get(0).getMessage(),
-          Integer.parseInt(okexResponse.getData().get(0).getCode()));
-  }
-
-  public List<String> placeLimitOrder(List<LimitOrder> limitOrders)
-      throws IOException, FundsExceededException {
-    return placeOkexOrder(
-            limitOrders.stream().map(OkexAdapters::adaptOrder).collect(Collectors.toList()))
-        .getData()
-        .stream()
-        .map(OkexOrderResponse::getOrderId)
-        .collect(Collectors.toList());
+              okexResponse.getData().get(0).getMessage(),
+              Integer.parseInt(okexResponse.getData().get(0).getCode()));
   }
 
   @Override
@@ -106,14 +111,17 @@ public class OkexTradeService extends OkexTradeServiceRaw implements TradeServic
 
   @Override
   public boolean cancelOrder(CancelOrderParams params) throws IOException {
-    if (params instanceof CancelOrderByIdParams && params instanceof CancelOrderByInstrument) {
+    if (params instanceof CancelOrderByIdParams
+            && params instanceof CancelOrderByInstrument
+            && params instanceof CancelOrderByUserReferenceParams) {
 
       String id = ((CancelOrderByIdParams) params).getOrderId();
       String instrumentId =
           OkexAdapters.adaptInstrumentId(((CancelOrderByInstrument) params).getInstrument());
+      String userReference = ((CancelOrderByUserReferenceParams) params).getUserReference();
 
       OkexCancelOrderRequest req =
-          OkexCancelOrderRequest.builder().instrumentId(instrumentId).orderId(id).build();
+          OkexCancelOrderRequest.builder().instrumentId(instrumentId).orderId(id).clientOrderId(userReference).build();
 
       return "0".equals(cancelOkexOrder(req).getData().get(0).getCode());
     } else {
@@ -132,6 +140,7 @@ public class OkexTradeService extends OkexTradeServiceRaw implements TradeServic
                             .instrumentId(
                                 OkexAdapters.adaptInstrumentId(
                                     ((CancelOrderByInstrument) param).getInstrument()))
+                            .clientOrderId(((CancelOrderByUserReferenceParams) param).getUserReference())
                             .build())
                 .collect(Collectors.toList()))
         .getData()

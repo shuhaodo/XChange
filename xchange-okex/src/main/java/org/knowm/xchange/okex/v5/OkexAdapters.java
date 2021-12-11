@@ -50,7 +50,7 @@ public class OkexAdapters {
         "live".equals(order.getState())
             ? Order.OrderStatus.OPEN
             : Order.OrderStatus.PARTIALLY_FILLED,
-        null);
+        order.getClientOrderId());
   }
 
   public static OpenOrders adaptOpenOrders(List<OkexOrderDetails> orders) {
@@ -73,7 +73,7 @@ public class OkexAdapters {
                         "live".equals(order.getState())
                             ? Order.OrderStatus.OPEN
                             : Order.OrderStatus.PARTIALLY_FILLED,
-                        null))
+                        order.getClientOrderId()))
             .collect(Collectors.toList());
     return new OpenOrders(openOrders);
   }
@@ -82,22 +82,32 @@ public class OkexAdapters {
     return OkexAmendOrderRequest.builder()
         .instrumentId(adaptCurrencyPairId((CurrencyPair) order.getInstrument()))
         .orderId(order.getId())
+        .clientOrderId(order.getUserReference())
         .amendedAmount(order.getOriginalAmount().toString())
         .amendedPrice(order.getLimitPrice().toString())
         .build();
   }
 
-  public static OkexOrderRequest adaptOrder(LimitOrder order) {
+  public static OkexOrderRequest adaptOrder(Order order) {
+    String orderType = "limit";
+    String price = null;
+    if (order instanceof LimitOrder) {
+      price = ((LimitOrder) order).getLimitPrice().toString();
+    } else {
+      orderType = "market";
+    }
     return OkexOrderRequest.builder()
         .instrumentId(adaptInstrumentId(order.getInstrument()))
-        .tradeMode(order.getInstrument() instanceof CurrencyPair ? "cash" : "cross")
         .side(order.getType() == Order.OrderType.BID ? "buy" : "sell")
         .posSide(null) // PosSide should come as a input from an extended LimitOrder class to
         // support Futures/Swap capabilities of Okex, till then it should be null to
         // perform "net" orders
-        .orderType("limit")
+        .orderType(orderType)
         .amount(order.getOriginalAmount().toString())
-        .price(order.getLimitPrice().toString())
+        .price(price)
+        .tradeMode("cross")
+        .targetCurrency("base_ccy") //use base quantity in market order
+        .clientOrderId(order.getUserReference())
         .build();
   }
 
@@ -281,10 +291,13 @@ public class OkexAdapters {
                       new Balance.Builder()
                           .currency(new Currency(detail.getCurrency()))
                           .total(new BigDecimal(detail.getCashBalance()))
-                          .available(new BigDecimal(detail.getAvailableBalance()))
+                          .available(new BigDecimal(detail.getAvilableEquity()))
+                          .interest(new BigDecimal(detail.getInterest()))
+                          .frozen(new BigDecimal(detail.getFrozenBalance()))
                           .timestamp(new Date())
                           .build())
               .collect(Collectors.toList());
+
     }
 
     return Wallet.Builder.from(balances)

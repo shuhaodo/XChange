@@ -75,7 +75,7 @@ public interface BinanceAuthenticated extends Binance {
   @Path("sapi/v1/margin/order")
   BinanceOrder marginOrderStatus(
           @QueryParam("symbol") String symbol,
-          @QueryParam("orderId") long orderId,
+          @QueryParam("orderId") String orderId,
           @QueryParam("origClientOrderId") String origClientOrderId,
           @QueryParam("recvWindow") Long recvWindow,
           @QueryParam("timestamp") SynchronizedValueFactory<Long> timestamp,
@@ -180,7 +180,7 @@ public interface BinanceAuthenticated extends Binance {
   @Path("api/v3/order")
   BinanceOrder orderStatus(
       @QueryParam("symbol") String symbol,
-      @QueryParam("orderId") long orderId,
+      @QueryParam("orderId") String orderId,
       @QueryParam("origClientOrderId") String origClientOrderId,
       @QueryParam("recvWindow") Long recvWindow,
       @QueryParam("timestamp") SynchronizedValueFactory<Long> timestamp,

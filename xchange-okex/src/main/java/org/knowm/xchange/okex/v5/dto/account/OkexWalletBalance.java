@@ -47,7 +47,7 @@ public class OkexWalletBalance {
     private String currency;
 
     @JsonProperty("eq")
-    private String equity;
+    private String equity; //Total balance
 
     @JsonProperty("cashBal")
     private String cashBalance;
@@ -59,7 +59,7 @@ public class OkexWalletBalance {
     private String isolatedMarginEquity;
 
     @JsonProperty("availEq")
-    private String avilableEquity;
+    private String avilableEquity; //Available balance
 
     @JsonProperty("disEq")
     private String discountEquity;
@@ -68,13 +68,16 @@ public class OkexWalletBalance {
     private String availableBalance;
 
     @JsonProperty("frozenBal")
-    private String frozenBalance;
+    private String frozenBalance; //frozen balance
 
     @JsonProperty("ordFrozen")
     private String marginFrozen;
 
     @JsonProperty("eqUsd")
     private String usdEqual;
+
+    @JsonProperty("interest")
+    private String interest;
 
     // TODO: Model the rest of the margin fields
   }

@@ -61,7 +61,7 @@ public class OkexTradeServiceRaw extends OkexBaseService {
     }
   }
 
-  public OkexResponse<List<OkexOrderDetails>> getOkexOrder(String instrumentId, String orderId)
+  public OkexResponse<List<OkexOrderDetails>> getOkexOrder(String instrumentId, String orderId, String clientId)
       throws IOException {
     try {
       return decorateApiCall(
@@ -80,7 +80,7 @@ public class OkexTradeServiceRaw extends OkexBaseService {
                               .getExchangeSpecificParametersItem("simulated"),
                       instrumentId,
                       orderId,
-                      null))
+                      clientId))
           .withRateLimiter((rateLimiter(orderDetailsPath)))
           .call();
     } catch (OkexException e) {

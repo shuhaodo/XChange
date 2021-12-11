@@ -167,6 +167,7 @@ public class BinanceAdapters {
     }
     if (order.clientOrderId != null) {
       builder.flag(BinanceOrderFlags.withClientId(order.clientOrderId));
+      builder.userReference(order.clientOrderId);
     }
     return builder.build();
   }

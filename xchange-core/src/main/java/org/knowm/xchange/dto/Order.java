@@ -475,6 +475,11 @@ public abstract class Order implements Serializable {
   @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.WRAPPER_OBJECT)
   public interface IOrderFlags {}
 
+  public enum TradeModeFlags implements IOrderFlags {
+    SPOT,
+    MARGIN;
+  }
+
   public abstract static class Builder {
 
     protected final Set<IOrderFlags> flags = new HashSet<>();

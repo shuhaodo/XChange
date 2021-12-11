@@ -6,18 +6,23 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
+import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.Order;
+import org.knowm.xchange.dto.account.AccountInfo;
 import org.knowm.xchange.dto.meta.CurrencyMetaData;
 import org.knowm.xchange.dto.meta.CurrencyPairMetaData;
+import org.knowm.xchange.dto.trade.LimitOrder;
+import org.knowm.xchange.dto.trade.MarketOrder;
+import org.knowm.xchange.okex.v5.service.OkexAccountService;
 import org.knowm.xchange.okex.v5.service.OkexMarketDataService;
+import org.knowm.xchange.okex.v5.service.OkexTradeService;
+import org.knowm.xchange.service.trade.params.DefaultCancelOrderParams;
+import org.knowm.xchange.service.trade.params.orders.DefaultQueryOrderParams;
 
-@Slf4j
+
 public class OkexExchangeIntegration {
   // Enter your authentication details here to run private endpoint tests
   private static final String API_KEY = System.getenv("api-key");
@@ -25,9 +30,19 @@ public class OkexExchangeIntegration {
   private static final String PASSPHRASE = System.getenv("xek");
 
   protected static OkexExchange exchange;
+  private final String clientOrderId = "testBTC0123";
+  private final CurrencyPair pair = new CurrencyPair("ZEC/USDT");
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void main(String[] args) throws Exception {
+    createExchange();
+    OkexExchangeIntegration me = new OkexExchangeIntegration();
+    //me.testAccountBalances();
+    //me.testExchangeMetaData();
+    me.placeLimitOrders();
+    //me.placeMarketOrders();
+  }
+
+  public static void createExchange() throws Exception {
     exchange = ExchangeFactory.INSTANCE.createExchange(OkexExchange.class);
     ExchangeSpecification spec = exchange.getDefaultExchangeSpecification();
     spec.setApiKey(API_KEY);
@@ -36,7 +51,17 @@ public class OkexExchangeIntegration {
     exchange.applySpecification(spec);
   }
 
-  @Test
+
+  public void testAccountBalances() {
+    try {
+      OkexAccountService service = (OkexAccountService) exchange.getAccountService();
+      AccountInfo info = service.getAccountInfo();
+      System.out.println(info);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   public void testExchangeMetaData() {
     OkexMarketDataService service = (OkexMarketDataService) exchange.getMarketDataService();
     Collection<CurrencyMetaData> metaData = exchange.getExchangeMetaData().getCurrencies().values();
@@ -63,113 +88,69 @@ public class OkexExchangeIntegration {
     System.out.println(margins.size() + " margin pairs");
   }
 
-  @Test
-  public void testCreateExchangeShouldApplyDefaultSpecification() {
-    ExchangeSpecification spec = new OkexExchange().getDefaultExchangeSpecification();
-    final Exchange exchange = ExchangeFactory.INSTANCE.createExchange(spec);
-
-    assertThat(exchange.getExchangeSpecification().getSslUri()).isEqualTo("https://www.okex.com");
-    assertThat(exchange.getExchangeSpecification().getHost()).isEqualTo("okex.com");
-    assertThat(exchange.getExchangeSpecification().getResilience().isRateLimiterEnabled())
-        .isEqualTo(false);
-    assertThat(exchange.getExchangeSpecification().getResilience().isRetryEnabled())
-        .isEqualTo(false);
-  }
-
-  @Test
-  public void testCreateExchangeShouldApplyResilience() {
-    ExchangeSpecification spec = new OkexExchange().getDefaultExchangeSpecification();
-    ExchangeSpecification.ResilienceSpecification resilienceSpecification =
-        new ExchangeSpecification.ResilienceSpecification();
-    resilienceSpecification.setRateLimiterEnabled(true);
-    resilienceSpecification.setRetryEnabled(true);
-    spec.setResilience(resilienceSpecification);
-
-    final Exchange exchange = ExchangeFactory.INSTANCE.createExchange(spec);
-
-    assertThat(exchange.getExchangeSpecification().getResilience().isRateLimiterEnabled())
-        .isEqualTo(true);
-    assertThat(exchange.getExchangeSpecification().getResilience().isRetryEnabled())
-        .isEqualTo(true);
-  }
-/*
-  @Test
-  public void testOrderActions() throws Exception {
+  public void placeLimitOrders() throws Exception {
     if (!API_KEY.isEmpty() && !SECRET_KEY.isEmpty() && !PASSPHRASE.isEmpty()) {
       final OkexTradeService okexTradeService = (OkexTradeService) exchange.getTradeService();
 
-      assertThat(exchange.getExchangeSpecification().getSslUri()).isEqualTo("https://www.okex.com");
-      assertThat(exchange.getExchangeSpecification().getHost()).isEqualTo("okex.com");
+      // Place a sell order
+      LimitOrder limitOrder = new LimitOrder.Builder(Order.OrderType.ASK, pair)
+              .originalAmount(new BigDecimal("0.01"))
+              .limitPrice(new BigDecimal("180"))
+              .userReference(clientOrderId)
+              .build();
 
-      // Place a single order
-      LimitOrder limitOrder =
-          new LimitOrder(
-              Order.OrderType.ASK, BigDecimal.TEN, TRX_USDT, null, new Date(), new BigDecimal(100));
-
+      System.out.println("Placing order: " + limitOrder.toString());
       String orderId = okexTradeService.placeLimitOrder(limitOrder);
-      log.info("Placed orderId: {}", orderId);
-
-      // Amend the above order
-      LimitOrder limitOrder2 =
-          new LimitOrder(
-              Order.OrderType.ASK,
-              BigDecimal.TEN,
-              TRX_USDT,
-              orderId,
-              new Date(),
-              new BigDecimal(1000));
-      String orderId2 = okexTradeService.changeOrder(limitOrder2);
-      log.info("Amended orderId: {}", orderId2);
-
-      // Get non-existent Order Detail
-      Order failOrder =
-          okexTradeService.getOrder(new DefaultQueryOrderParamInstrument(TRX_USDT, "2132465465"));
-      log.info("Null Order: {}", failOrder);
+      System.out.println("Placed orderId: " + orderId);
 
       // Get Order Detail
-      Order amendedOrder =
-          okexTradeService.getOrder(new DefaultQueryOrderParamInstrument(TRX_USDT, orderId2));
-      log.info("Amended Order: {}", amendedOrder);
+      Order placedOrder = okexTradeService.getOrder(
+              new DefaultQueryOrderParams(pair, null, clientOrderId, true));
+      System.out.println("Placed Order Info: " + placedOrder.toString());
+
+      LimitOrder updatedLimitOrder = new LimitOrder.Builder(Order.OrderType.ASK, pair)
+              .originalAmount(new BigDecimal("0.015"))
+              .limitPrice(new BigDecimal("185"))
+              .userReference(clientOrderId)
+              .build();
+
+      System.out.println("Updating order: " + updatedLimitOrder.toString());
+      String orderId2 = okexTradeService.changeOrder(updatedLimitOrder);
+      System.out.println("Updated orderId: " + orderId2);
+
+      // Get Updated Order Detail
+      Order updatedOrder = okexTradeService.getOrder(
+              new DefaultQueryOrderParams(pair, orderId2, clientOrderId, true));
+      System.out.println("Updated Order Info: " + updatedOrder.toString());
 
       // Cancel that order
-      boolean result =
-          exchange
-              .getTradeService()
-              .cancelOrder(new OkexTradeParams.OkexCancelOrderParams(TRX_USDT, orderId2));
-      log.info("Cancellation result: {}", result);
-
-      // Place batch orders
-      List<String> orderIds =
-          okexTradeService.placeLimitOrder(Arrays.asList(limitOrder, limitOrder, limitOrder));
-      log.info("Placed batch orderIds: {}", orderIds);
-
-      // Amend batch orders
-      List<LimitOrder> amendOrders = new ArrayList<>();
-      for (String id : orderIds) {
-        amendOrders.add(
-            new LimitOrder(
-                Order.OrderType.ASK,
-                BigDecimal.TEN,
-                TRX_USDT,
-                id,
-                new Date(),
-                new BigDecimal(1000)));
-      }
-      List<String> amendedOrderIds = okexTradeService.changeOrder(amendOrders);
-      log.info("Amended batch orderIds: {}", amendedOrderIds);
-
-      OpenOrders openOrders = okexTradeService.getOpenOrders();
-      log.info("Open Orders: {}", openOrders);
-
-      // Cancel batch orders
-      List<CancelOrderParams> cancelOrderParams = new ArrayList<>();
-      for (String id : orderIds) {
-        cancelOrderParams.add(new OkexTradeParams.OkexCancelOrderParams(TRX_USDT, id));
-      }
-      List<Boolean> results = okexTradeService.cancelOrder(cancelOrderParams);
-      log.info("Cancelled order results: {}", results);
+      boolean result = okexTradeService.cancelOrder(
+              new DefaultCancelOrderParams(pair, null, clientOrderId, true));
+      System.out.println("Cancellation result: " + result);
     }
   }
 
- */
+  public void placeMarketOrders() throws Exception {
+    final OkexTradeService okexTradeService = (OkexTradeService) exchange.getTradeService();
+
+    // Place a sell order
+    MarketOrder sellMarginOrder = new MarketOrder.Builder(Order.OrderType.ASK, pair)
+            .originalAmount(new BigDecimal("0.01"))
+            .userReference(clientOrderId)
+            .build();
+
+    System.out.println("Placing sell order: " + sellMarginOrder.toString());
+    String orderId = okexTradeService.placeMarketOrder(sellMarginOrder);
+    System.out.println("Placed sell orderId: " + orderId);
+
+    // Place a buy order
+    MarketOrder buySpotOrder = new MarketOrder.Builder(Order.OrderType.BID, pair)
+            .originalAmount(new BigDecimal("0.01"))
+            .userReference(clientOrderId)
+            .build();
+
+    System.out.println("Placing buy order: " + buySpotOrder.toString());
+    String buyOrderId = okexTradeService.placeMarketOrder(buySpotOrder);
+    System.out.println("Placed buy orderId: " + buyOrderId);
+  }
 }
