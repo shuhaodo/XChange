@@ -11,12 +11,12 @@ import org.knowm.xchange.dto.Order.OrderType;
 import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.account.Wallet;
 import org.knowm.xchange.dto.marketdata.OrderBook;
+import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.marketdata.Trades;
 import org.knowm.xchange.dto.meta.CurrencyMetaData;
 import org.knowm.xchange.dto.meta.CurrencyPairMetaData;
 import org.knowm.xchange.dto.meta.ExchangeMetaData;
-import org.knowm.xchange.dto.meta.WalletHealth;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.dto.trade.OpenOrders;
 import org.knowm.xchange.instrument.Instrument;
@@ -174,6 +174,25 @@ public class OkexAdapters {
                     .build()));
 
     return new Trades(trades);
+  }
+
+  public static List<Ticker> adaptTickers(List<OkexTicker> tickers) {
+    return tickers.stream().map(
+            t -> new Ticker.Builder()
+                    .instrument(new CurrencyPair(t.getInstId()))
+                    .open(t.getOpen24h())
+                    .last(t.getLast())
+                    .bid(t.getBidPx())
+                    .ask(t.getAskPx())
+                    .high(t.getHigh24h())
+                    .low(t.getLow24h())
+                    .volume(t.getVol24h())
+                    .quoteVolume(t.getVolCcy24h())
+                    .bidSize(t.getBidSz())
+                    .askSize(t.getAskSz())
+                    .timestamp(new Date(t.getTs()))
+                    .build()
+    ).collect(Collectors.toList());
   }
 
   public static Order.OrderType adaptOkexOrderSideToOrderType(String okexOrderSide) {

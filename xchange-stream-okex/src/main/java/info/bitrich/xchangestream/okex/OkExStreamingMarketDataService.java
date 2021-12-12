@@ -26,11 +26,6 @@ public class OkExStreamingMarketDataService implements StreamingMarketDataServic
     this.service = service;
   }
 
-  @Override
-  public boolean supportConcurrentSubscriptions() {
-      return true;
-  }
-
   /**
    *
    * @param currencyPairs Currency pairs of the order book

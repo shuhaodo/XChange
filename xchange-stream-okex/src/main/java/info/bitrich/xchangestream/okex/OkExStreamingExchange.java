@@ -1,6 +1,7 @@
 package info.bitrich.xchangestream.okex;
 
 import info.bitrich.xchangestream.core.ProductSubscription;
+import info.bitrich.xchangestream.core.StreamingAccountService;
 import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import info.bitrich.xchangestream.service.netty.ConnectionStateModel.State;
@@ -18,6 +19,7 @@ public class OkExStreamingExchange extends OkexExchange implements StreamingExch
   private final OkExStreamingService publicStreamingService;
   private final OkExStreamingService privateStreamingService;
   private OkExStreamingMarketDataService streamingMarketDataService;
+  private OkExStreamingAccountDataService streamingAccountDataService;
 
   public OkExStreamingExchange() {
     publicStreamingService = new OkExStreamingService(PUBLIC_API_URI);
@@ -25,15 +27,27 @@ public class OkExStreamingExchange extends OkexExchange implements StreamingExch
   }
 
   @Override
+  public boolean supportConcurrentSubscriptions() {
+    return true;
+  }
+
+  @Override
   protected void initServices() {
     super.initServices();
+    privateStreamingService.setAuthData(
+            exchangeSpecification.getApiKey(),
+            exchangeSpecification.getSecretKey(),
+            (String)exchangeSpecification.getExchangeSpecificParametersItem("passphrase")
+    );
     streamingMarketDataService = new OkExStreamingMarketDataService(publicStreamingService);
+    streamingAccountDataService = new OkExStreamingAccountDataService(privateStreamingService);
   }
 
   @Override
   public Completable connect(ProductSubscription... args) {
     List<Completable> completables = new ArrayList<>();
     completables.add(publicStreamingService.connect());
+    completables.add(privateStreamingService.connect());
 
     return Completable.concat(completables);
   }
@@ -42,6 +56,7 @@ public class OkExStreamingExchange extends OkexExchange implements StreamingExch
   public Completable disconnect() {
     List<Completable> completables = new ArrayList<>();
     completables.add(publicStreamingService.disconnect());
+    completables.add(privateStreamingService.disconnect());
     return Completable.concat(completables);
   }
 
@@ -57,6 +72,7 @@ public class OkExStreamingExchange extends OkexExchange implements StreamingExch
   public Observable<Throwable> reconnectFailure() {
     List<Observable<Throwable>> observables = new ArrayList<>();
     observables.add(publicStreamingService.subscribeReconnectFailure());
+    observables.add(privateStreamingService.subscribeReconnectFailure());
 
     return Observable.concat(observables);
   }
@@ -65,6 +81,7 @@ public class OkExStreamingExchange extends OkexExchange implements StreamingExch
   public Observable<Object> connectionSuccess() {
     List<Observable<Object>> observables = new ArrayList<>();
     observables.add(publicStreamingService.subscribeConnectionSuccess());
+    observables.add(privateStreamingService.subscribeConnectionSuccess());
 
     return Observable.concat(observables);
   }
@@ -73,6 +90,7 @@ public class OkExStreamingExchange extends OkexExchange implements StreamingExch
   public Observable<State> connectionStateObservable() {
     List<Observable<State>> observables = new ArrayList<>();
     observables.add(publicStreamingService.subscribeConnectionState());
+    observables.add(privateStreamingService.subscribeConnectionState());
 
     return Observable.concat(observables);
   }
@@ -83,7 +101,11 @@ public class OkExStreamingExchange extends OkexExchange implements StreamingExch
   }
 
   @Override
+  public StreamingAccountService getStreamingAccountService() { return streamingAccountDataService; }
+
+  @Override
   public void useCompressedMessages(boolean compressedMessages) {
     publicStreamingService.useCompressedMessages(compressedMessages);
+    privateStreamingService.useCompressedMessages(compressedMessages);
   }
 }

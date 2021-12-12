@@ -1,39 +1,35 @@
 package info.bitrich.xchangestream.okex;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import info.bitrich.xchangestream.core.StreamingAuthedService;
+import info.bitrich.xchangestream.okex.dto.OkExAuthenticationMessage;
+import info.bitrich.xchangestream.okex.dto.OkExAuthenticationMessage.OkExAuthenticationArg;
 import info.bitrich.xchangestream.okex.dto.OkExStreamResponse;
 import info.bitrich.xchangestream.okex.dto.WebSocketMessage;
-import info.bitrich.xchangestream.service.netty.JsonNettyStreamingService;
 import info.bitrich.xchangestream.service.netty.WebSocketClientHandler;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
-import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.Inflater;
 import org.knowm.xchange.exceptions.ExchangeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OkExStreamingService extends JsonNettyStreamingService {
+public class OkExStreamingService extends StreamingAuthedService {
 
   private final Observable<Long> pingPongSrc = Observable.interval(15, 15, TimeUnit.SECONDS);
 
   private Disposable pingPongSubscription;
 
   public OkExStreamingService(String apiUrl) {
-    super(apiUrl);
+    super(apiUrl, null, null, null);
   }
 
   @Override
@@ -56,6 +52,26 @@ public class OkExStreamingService extends JsonNettyStreamingService {
   }
 
   @Override
+  protected String doGetSubscribeMessage(String channelName, Object... args) throws IOException {
+    List<Map<String, String>> channels = new ArrayList<Map<String, String>>();
+    if (args.length > 0) {
+      channels = (List<Map<String, String>>)args[0];
+    }
+    return objectMapper.writeValueAsString(new WebSocketMessage("subscribe", channels));
+  }
+
+  @Override
+  protected Object createAuthMessageObject() {
+    String timestamp = System.currentTimeMillis() / 1000 + "";
+    String signData = timestamp + "GET" + "/users/self/verify";
+    String signature = getSignature(signData);
+    List<OkExAuthenticationArg> args = new ArrayList<>();
+    OkExAuthenticationArg arg = new OkExAuthenticationArg(apiKey, passPhrase, timestamp, signature);
+    args.add(arg);
+    return new OkExAuthenticationMessage(args);
+  }
+
+  @Override
   protected String getChannelNameFromMessage(JsonNode message) throws IOException {
     OkExStreamResponse response = objectMapper.treeToValue(message, OkExStreamResponse.class);
     if (response != null && response.getArg() != null && response.getArg().getChannel() != null) {
@@ -64,15 +80,6 @@ public class OkExStreamingService extends JsonNettyStreamingService {
       return response.getArgs().get(0).getChannel();
     }
     return "unknown";
-  }
-
-  @Override
-  public String getSubscribeMessage(String channelName, Object... args) throws IOException {
-    List<Map<String, String>> channels = new ArrayList<Map<String, String>>();
-    if (args.length > 0) {
-      channels = (List<Map<String, String>>)args[0];
-    }
-    return objectMapper.writeValueAsString(new WebSocketMessage("subscribe", channels));
   }
 
   @Override

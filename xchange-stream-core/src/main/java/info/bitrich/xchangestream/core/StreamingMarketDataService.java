@@ -39,9 +39,6 @@ public interface StreamingMarketDataService {
     throw new NotYetImplementedForExchangeException("getOrderBook");
   }
 
-  default boolean supportConcurrentSubscriptions() {
-    return false;
-  }
   /**
    * Get a ticker representing the current exchange rate. Emits {@link
    * info.bitrich.xchangestream.service.exception.NotConnectedException} When not connected to the

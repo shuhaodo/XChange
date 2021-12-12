@@ -18,10 +18,7 @@ import javax.ws.rs.core.MediaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.knowm.xchange.okex.v5.dto.OkexException;
 import org.knowm.xchange.okex.v5.dto.OkexResponse;
-import org.knowm.xchange.okex.v5.dto.marketdata.OkexCandleStick;
-import org.knowm.xchange.okex.v5.dto.marketdata.OkexInstrument;
-import org.knowm.xchange.okex.v5.dto.marketdata.OkexOrderbook;
-import org.knowm.xchange.okex.v5.dto.marketdata.OkexTrade;
+import org.knowm.xchange.okex.v5.dto.marketdata.*;
 
 @Path("/api/v5")
 @Produces(APPLICATION_JSON)
@@ -71,5 +68,11 @@ public interface Okex {
           @QueryParam("bar") String bar,
           @QueryParam("limit") String limit,
           @HeaderParam("X-SIMULATED-TRADING") String simulatedTrading)
+          throws IOException, OkexException;
+
+  @GET
+  @Path("/market/tickers")
+  OkexResponse<List<OkexTicker>> getTickers(
+          @QueryParam("instType") String instType)
           throws IOException, OkexException;
 }

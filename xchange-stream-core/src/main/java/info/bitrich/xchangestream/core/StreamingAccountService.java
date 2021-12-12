@@ -7,6 +7,8 @@ import org.knowm.xchange.exceptions.ExchangeSecurityException;
 import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.knowm.xchange.service.account.AccountService;
 
+import java.util.List;
+
 public interface StreamingAccountService {
 
   /**
@@ -30,6 +32,10 @@ public interface StreamingAccountService {
    * @return {@link Observable} that emits {@link Balance} when exchange sends the update.
    */
   default Observable<Balance> getBalanceChanges(Currency currency, Object... args) {
+    throw new NotYetImplementedForExchangeException("getBalanceChanges");
+  }
+
+  default Observable<List<Balance>> getBalanceChanges() {
     throw new NotYetImplementedForExchangeException("getBalanceChanges");
   }
 }

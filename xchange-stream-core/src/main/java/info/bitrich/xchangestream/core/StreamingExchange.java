@@ -29,6 +29,14 @@ public interface StreamingExchange extends Exchange {
   Completable connect(ProductSubscription... args);
 
   /**
+   *
+   * @return if multiple subscriptions can subscribed at once
+   */
+  default boolean supportConcurrentSubscriptions() {
+    return false;
+  }
+
+  /**
    * Disconnect from the WebSocket API.
    *
    * @return {@link Completable} that completes upon successful disconnect.

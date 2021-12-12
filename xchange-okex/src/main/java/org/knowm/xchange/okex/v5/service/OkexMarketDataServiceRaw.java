@@ -124,6 +124,11 @@ public class OkexMarketDataServiceRaw extends OkexBaseService {
           String bar,
           String limit)
           throws OkexException, IOException {
-    return okex.getHistoryCandles(instrument, after, before, bar, limit, (String) exchange.getExchangeSpecification().getExchangeSpecificParametersItem("simulated"));
+    return okex.getHistoryCandles(instrument, after, before, bar, limit,
+            (String) exchange.getExchangeSpecification().getExchangeSpecificParametersItem("simulated"));
+  }
+
+  public OkexResponse<List<OkexTicker>> getOkexTickers() throws OkexException, IOException {
+    return okex.getTickers("SPOT");
   }
 }

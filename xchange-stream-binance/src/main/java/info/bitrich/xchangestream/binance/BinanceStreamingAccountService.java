@@ -37,7 +37,7 @@ public class BinanceStreamingAccountService implements StreamingAccountService {
     return accountInfoPublisher;
   }
 
-  public Observable<Balance> getBalanceChanges() {
+  public Observable<Balance> getAllBalanceChanges() {
     checkConnected();
     return getRawAccountInfo()
         .map(OutboundAccountInfoBinanceWebsocketTransaction::toBalanceList)
@@ -51,7 +51,7 @@ public class BinanceStreamingAccountService implements StreamingAccountService {
 
   @Override
   public Observable<Balance> getBalanceChanges(Currency currency, Object... args) {
-    return getBalanceChanges().filter(t -> t.getCurrency().equals(currency));
+    return getAllBalanceChanges().filter(t -> t.getCurrency().equals(currency));
   }
 
   /**
