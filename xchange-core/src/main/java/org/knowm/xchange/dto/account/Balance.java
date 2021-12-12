@@ -144,16 +144,16 @@ public final class Balance implements Comparable<Balance>, Serializable {
       BigDecimal interest,
       Date timestamp) {
 
-    if (total != null && available != null) {
-      BigDecimal sum =
-          available.add(frozen).subtract(borrowed).add(loaned).add(withdrawing).add(depositing);
-      if (0 != total.compareTo(sum)) {
-        log.warn(
-            "{} = total != available + frozen - borrowed + loaned + withdrawing + depositing = {}",
-            total,
-            sum);
-      }
-    }
+//    if (total != null && available != null) {
+//      BigDecimal sum =
+//          available.add(frozen).subtract(borrowed).add(loaned).add(withdrawing).add(depositing);
+//      if (0 != total.compareTo(sum)) {
+//        log.warn(
+//            "{} = total != available + frozen - borrowed + loaned + withdrawing + depositing = {}",
+//            total,
+//            sum);
+//      }
+//    }
     this.currency = currency;
     this.total = total;
     this.available = available;
@@ -196,16 +196,16 @@ public final class Balance implements Comparable<Balance>, Serializable {
       BigDecimal depositing,
       BigDecimal interest) {
 
-    if (total != null && available != null) {
-      BigDecimal sum =
-          available.add(frozen).subtract(borrowed).add(loaned).add(withdrawing).add(depositing);
-      if (0 != total.compareTo(sum)) {
-        log.warn(
-            "{} = total != available + frozen - borrowed + loaned + withdrawing + depositing = {}",
-            total,
-            sum);
-      }
-    }
+//    if (total != null && available != null) {
+//      BigDecimal sum =
+//          available.add(frozen).subtract(borrowed).add(loaned).add(withdrawing).add(depositing);
+//      if (0 != total.compareTo(sum)) {
+//        log.warn(
+//            "{} = total != available + frozen - borrowed + loaned + withdrawing + depositing = {}",
+//            total,
+//            sum);
+//      }
+//    }
     this.currency = currency;
     this.total = total;
     this.available = available;
