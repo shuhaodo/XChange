@@ -9,6 +9,8 @@ import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.knowm.xchange.instrument.Instrument;
 import org.knowm.xchange.service.trade.TradeService;
 
+import java.util.List;
+
 public interface StreamingTradeService {
 
   /**
@@ -39,6 +41,10 @@ public interface StreamingTradeService {
     if (instrument instanceof CurrencyPair) {
       return getOrderChanges((CurrencyPair) instrument, args);
     }
+    throw new NotYetImplementedForExchangeException("getOrderChanges");
+  }
+
+  default Observable<List<Order>> getOrderChanges() {
     throw new NotYetImplementedForExchangeException("getOrderChanges");
   }
 

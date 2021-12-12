@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class OkExStreamArgInstument {
+public class OkExStreamArgInstrument {
     @JsonProperty("channel")
     private String channel;
 

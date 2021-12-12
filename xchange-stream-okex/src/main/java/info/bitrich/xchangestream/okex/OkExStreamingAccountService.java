@@ -20,15 +20,14 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class OkExStreamingAccountDataService implements StreamingAccountService {
+public class OkExStreamingAccountService implements StreamingAccountService {
     private final OkExStreamingService service;
 
     private final ObjectMapper mapper = StreamingObjectMapperHelper.getObjectMapper();
-    private final Map<String, OkExOrderbookStreamStream> orderbooks = new HashMap<>();
     private final String KEY_CHANNEL = "channel";
     private final String CHANNEL_ACCOUNT = "account";
 
-  OkExStreamingAccountDataService(OkExStreamingService service) {
+  OkExStreamingAccountService(OkExStreamingService service) {
     this.service = service;
   }
 

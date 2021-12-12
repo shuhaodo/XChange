@@ -22,7 +22,7 @@ public class OkExManualExample {
   public static void main(String[] args) {
     OkExManualExample me = new OkExManualExample();
     exchange.connect().blockingAwait();
-    me.accountBalanceStream();
+    me.tradeStream();
 
     try {
       Thread.sleep(1000);
@@ -47,6 +47,15 @@ public class OkExManualExample {
     exchange.getStreamingAccountService().getBalanceChanges().subscribe(balances ->
             {
               LOG.info("balances: {}", balances);
+
+            }
+    );
+  }
+
+  private void tradeStream() {
+    exchange.getStreamingTradeService().getOrderChanges().subscribe(orders ->
+            {
+              LOG.info("orders: {}", orders);
 
             }
     );

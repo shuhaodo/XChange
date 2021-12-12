@@ -124,8 +124,10 @@ public class CexioStreamingRawService extends JsonNettyStreamingService {
     try {
       jsonNode = objectMapper.readTree(message);
     } catch (IOException e) {
-      LOG.error("Error parsing incoming message to JSON: {}", message);
-      subjectOrder.onError(e);
+      if (!"pong".equals(message)) {
+        LOG.error("Error parsing incoming message to JSON: {}", message);
+        subjectOrder.onError(e);
+      }
       return;
     }
     handleMessage(jsonNode);

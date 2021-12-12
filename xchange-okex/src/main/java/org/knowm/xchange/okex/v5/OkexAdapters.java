@@ -27,54 +27,33 @@ import org.knowm.xchange.okex.v5.dto.marketdata.*;
 import org.knowm.xchange.okex.v5.dto.trade.OkexAmendOrderRequest;
 import org.knowm.xchange.okex.v5.dto.trade.OkexOrderDetails;
 import org.knowm.xchange.okex.v5.dto.trade.OkexOrderRequest;
+import org.knowm.xchange.utils.BigDecimalUtils;
 
 /** Author: Max Gao (gaamox@tutanota.com) Created: 08-06-2021 */
 public class OkexAdapters {
 
   private static final String TRADING_WALLET_ID = "trading";
-  private static final String FOUNDING_WALLET_ID = "founding";
+  private static final String FUNDING_WALLET_ID = "funding";
 
-  public static Order adaptOrder(OkexOrderDetails order) {
+  public static LimitOrder adaptOrder(OkexOrderDetails order) {
     return new LimitOrder(
-        "buy".equals(order.getSide()) ? Order.OrderType.BID : Order.OrderType.ASK,
-        new BigDecimal(order.getAmount()),
-        new CurrencyPair(order.getInstrumentId()),
-        order.getOrderId(),
-        new Date(Long.parseLong(order.getCreationTime())),
-        new BigDecimal(order.getPrice()),
-        order.getAverageFilledPrice().isEmpty()
-            ? BigDecimal.ZERO
-            : new BigDecimal(order.getAverageFilledPrice()),
-        new BigDecimal(order.getAccumulatedFill()),
-        new BigDecimal(order.getFee()),
-        "live".equals(order.getState())
-            ? Order.OrderStatus.OPEN
-            : Order.OrderStatus.PARTIALLY_FILLED,
-        order.getClientOrderId());
+            adaptOkexOrderSideToOrderType(order.getSide()),
+            new BigDecimal(order.getAmount()),
+            new CurrencyPair(order.getInstrumentId()),
+            order.getOrderId(),
+            new Date(Long.parseLong(order.getUpdateTime())),
+            BigDecimalUtils.numberOrZero(order.getPrice()),
+            BigDecimalUtils.numberOrZero(order.getAverageFilledPrice()),
+            BigDecimalUtils.numberOrZero(order.getAccumulatedFill()),
+            BigDecimalUtils.numberOrZero(order.getFee()),
+            adaptOrderStatus(order.getState()),
+            order.getClientOrderId());
   }
 
   public static OpenOrders adaptOpenOrders(List<OkexOrderDetails> orders) {
     List<LimitOrder> openOrders =
-        orders.stream()
-            .map(
-                order ->
-                    new LimitOrder(
-                        "buy".equals(order.getSide()) ? Order.OrderType.BID : Order.OrderType.ASK,
-                        new BigDecimal(order.getAmount()),
-                        new CurrencyPair(order.getInstrumentId()),
-                        order.getOrderId(),
-                        new Date(Long.parseLong(order.getCreationTime())),
-                        new BigDecimal(order.getPrice()),
-                        order.getAverageFilledPrice().isEmpty()
-                            ? BigDecimal.ZERO
-                            : new BigDecimal(order.getAverageFilledPrice()),
-                        new BigDecimal(order.getAccumulatedFill()),
-                        new BigDecimal(order.getFee()),
-                        "live".equals(order.getState())
-                            ? Order.OrderStatus.OPEN
-                            : Order.OrderStatus.PARTIALLY_FILLED,
-                        order.getClientOrderId()))
-            .collect(Collectors.toList());
+            orders.stream().map(order ->
+                    adaptOrder(order)).collect(Collectors.toList());
     return new OpenOrders(openOrders);
   }
 
@@ -198,6 +177,20 @@ public class OkexAdapters {
   public static Order.OrderType adaptOkexOrderSideToOrderType(String okexOrderSide) {
 
     return okexOrderSide.equals("buy") ? Order.OrderType.BID : Order.OrderType.ASK;
+  }
+
+  public static Order.OrderStatus adaptOrderStatus(String state) {
+    if ("live".equals(state)) {
+      return Order.OrderStatus.OPEN;
+    } else if ("canceled".equals(state)) {
+      return Order.OrderStatus.CANCELED;
+    } else if ("partially_filled".equals(state)) {
+      return Order.OrderStatus.PARTIALLY_FILLED;
+    } else if ("filled".equals(state)) {
+      return Order.OrderStatus.FILLED;
+    } else {
+      return Order.OrderStatus.UNKNOWN;
+    }
   }
 
   private static Currency adaptCurrency(OkexCurrency currency) {
@@ -340,7 +333,7 @@ public class OkexAdapters {
             .collect(Collectors.toList());
 
     return Wallet.Builder.from(balances)
-        .id(FOUNDING_WALLET_ID)
+        .id(FUNDING_WALLET_ID)
         .features(new HashSet<>(Collections.singletonList(Wallet.WalletFeature.FUNDING)))
         .build();
   }

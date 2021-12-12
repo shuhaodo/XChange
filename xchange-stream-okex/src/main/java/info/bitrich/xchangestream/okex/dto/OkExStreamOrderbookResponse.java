@@ -17,5 +17,5 @@ public class OkExStreamOrderbookResponse {
     private String action;
 
     @JsonProperty("arg")
-    private OkExStreamArgInstument arg;
+    private OkExStreamArgInstrument arg;
 }

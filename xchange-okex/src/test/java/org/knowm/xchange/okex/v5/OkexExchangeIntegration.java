@@ -38,8 +38,8 @@ public class OkexExchangeIntegration {
     OkexExchangeIntegration me = new OkexExchangeIntegration();
     //me.testAccountBalances();
     //me.testExchangeMetaData();
-    me.placeLimitOrders();
-    //me.placeMarketOrders();
+    //me.placeLimitOrders();
+    me.placeMarketOrders();
   }
 
   public static void createExchange() throws Exception {

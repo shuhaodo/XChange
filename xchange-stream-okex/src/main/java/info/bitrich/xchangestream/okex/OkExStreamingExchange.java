@@ -1,9 +1,6 @@
 package info.bitrich.xchangestream.okex;
 
-import info.bitrich.xchangestream.core.ProductSubscription;
-import info.bitrich.xchangestream.core.StreamingAccountService;
-import info.bitrich.xchangestream.core.StreamingExchange;
-import info.bitrich.xchangestream.core.StreamingMarketDataService;
+import info.bitrich.xchangestream.core.*;
 import info.bitrich.xchangestream.service.netty.ConnectionStateModel.State;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
@@ -19,7 +16,8 @@ public class OkExStreamingExchange extends OkexExchange implements StreamingExch
   private final OkExStreamingService publicStreamingService;
   private final OkExStreamingService privateStreamingService;
   private OkExStreamingMarketDataService streamingMarketDataService;
-  private OkExStreamingAccountDataService streamingAccountDataService;
+  private OkExStreamingAccountService streamingAccountService;
+  private OkExStreamingTradeService streamingTradeService;
 
   public OkExStreamingExchange() {
     publicStreamingService = new OkExStreamingService(PUBLIC_API_URI);
@@ -40,7 +38,8 @@ public class OkExStreamingExchange extends OkexExchange implements StreamingExch
             (String)exchangeSpecification.getExchangeSpecificParametersItem("passphrase")
     );
     streamingMarketDataService = new OkExStreamingMarketDataService(publicStreamingService);
-    streamingAccountDataService = new OkExStreamingAccountDataService(privateStreamingService);
+    streamingAccountService = new OkExStreamingAccountService(privateStreamingService);
+    streamingTradeService = new OkExStreamingTradeService(privateStreamingService);
   }
 
   @Override
@@ -101,7 +100,10 @@ public class OkExStreamingExchange extends OkexExchange implements StreamingExch
   }
 
   @Override
-  public StreamingAccountService getStreamingAccountService() { return streamingAccountDataService; }
+  public StreamingAccountService getStreamingAccountService() { return streamingAccountService; }
+
+  @Override
+  public StreamingTradeService getStreamingTradeService() { return streamingTradeService; }
 
   @Override
   public void useCompressedMessages(boolean compressedMessages) {
