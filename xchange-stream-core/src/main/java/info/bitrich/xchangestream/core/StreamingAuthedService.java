@@ -2,6 +2,9 @@ package info.bitrich.xchangestream.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import info.bitrich.xchangestream.service.netty.JsonNettyStreamingService;
+import info.bitrich.xchangestream.service.netty.WebSocketClientHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import org.knowm.xchange.service.BaseParamsDigest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +76,34 @@ public abstract class StreamingAuthedService extends JsonNettyStreamingService {
     }
 
     abstract protected String doGetSubscribeMessage(String channelName, Object... args) throws IOException;
+
+    protected void onChannelInactive() {
+        LOG.info("Socket is disconnected, reset isAuth state");
+        isAuthed = false;
+    }
+
+    @Override
+    protected WebSocketClientHandler getWebSocketClientHandler(
+            WebSocketClientHandshaker handshaker,
+            WebSocketClientHandler.WebSocketMessageHandler handler) {
+        return new SecureSocketClientHandler(handshaker, handler);
+    }
+
+    protected class SecureSocketClientHandler extends NettyWebSocketClientHandler {
+
+        private final Logger LOG = LoggerFactory.getLogger(SecureSocketClientHandler.class);
+
+        protected SecureSocketClientHandler(
+                WebSocketClientHandshaker handshaker, WebSocketMessageHandler handler) {
+            super(handshaker, handler);
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) {
+            onChannelInactive();
+            super.channelInactive(ctx);
+        }
+    }
 
     public static class BaseStreamDigest extends BaseParamsDigest {
         private BaseStreamDigest(String secretKeyBase64) {

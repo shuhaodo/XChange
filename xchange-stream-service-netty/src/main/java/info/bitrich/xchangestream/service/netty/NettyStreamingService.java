@@ -421,6 +421,7 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
   }
 
   public void resubscribeChannels() {
+    LOG.info("Resubscribing channels: {}", channels.keySet());
     for (Entry<String, Subscription> entry : channels.entrySet()) {
       try {
         Subscription subscription = entry.getValue();

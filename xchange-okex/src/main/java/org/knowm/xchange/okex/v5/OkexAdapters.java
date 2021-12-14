@@ -41,7 +41,7 @@ public class OkexAdapters {
             new BigDecimal(order.getAmount()),
             new CurrencyPair(order.getInstrumentId()),
             order.getOrderId(),
-            new Date(Long.parseLong(order.getUpdateTime())),
+            new Date(Long.parseLong(order.getCreationTime())),
             BigDecimalUtils.numberOrZero(order.getPrice()),
             BigDecimalUtils.numberOrZero(order.getAverageFilledPrice()),
             BigDecimalUtils.numberOrZero(order.getAccumulatedFill()),
@@ -250,7 +250,7 @@ public class OkexAdapters {
               priceScale,
               null,
               staticMetaData != null ? staticMetaData.getFeeTiers() : null,
-              null,
+              new BigDecimal(instrument.getLotSize()),
               pair.counter,
               true,
               marginPairs.contains(pair))); //if margin trade is supported

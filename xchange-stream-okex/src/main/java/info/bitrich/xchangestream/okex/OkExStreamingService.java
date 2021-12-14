@@ -108,27 +108,10 @@ public class OkExStreamingService extends StreamingAuthedService {
   }
 
   @Override
-  protected WebSocketClientHandler getWebSocketClientHandler(
-      WebSocketClientHandshaker handshaker,
-      WebSocketClientHandler.WebSocketMessageHandler handler) {
-    return new OkCoinNettyWebSocketClientHandler(handshaker, handler);
-  }
-
-  protected class OkCoinNettyWebSocketClientHandler extends NettyWebSocketClientHandler {
-
-    private final Logger LOG = LoggerFactory.getLogger(OkCoinNettyWebSocketClientHandler.class);
-
-    protected OkCoinNettyWebSocketClientHandler(
-            WebSocketClientHandshaker handshaker, WebSocketMessageHandler handler) {
-      super(handshaker, handler);
+  protected void onChannelInactive() {
+    if (pingPongSubscription != null && !pingPongSubscription.isDisposed()) {
+      pingPongSubscription.dispose();
     }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-      if (pingPongSubscription != null && !pingPongSubscription.isDisposed()) {
-        pingPongSubscription.dispose();
-      }
-      super.channelInactive(ctx);
-    }
+    super.onChannelInactive();
   }
 }
