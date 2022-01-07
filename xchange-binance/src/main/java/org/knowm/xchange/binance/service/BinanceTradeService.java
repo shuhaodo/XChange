@@ -234,13 +234,13 @@ public class BinanceTradeService extends BinanceTradeServiceRaw implements Trade
                 pair,
                 param.getOrderId(),
                 param.getUserReference(),
-                null);
+                param.getUserReference());
       } else {
         super.cancelOrder(
                 pair,
                 param.getOrderId(),
                 param.getUserReference(),
-                null);
+                param.getUserReference());
       }
       return true;
     } catch (BinanceException e) {

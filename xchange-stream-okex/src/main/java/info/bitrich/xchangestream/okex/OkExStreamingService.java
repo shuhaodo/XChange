@@ -6,9 +6,6 @@ import info.bitrich.xchangestream.okex.dto.OkExAuthenticationMessage;
 import info.bitrich.xchangestream.okex.dto.OkExAuthenticationMessage.OkExAuthenticationArg;
 import info.bitrich.xchangestream.okex.dto.OkExStreamResponse;
 import info.bitrich.xchangestream.okex.dto.WebSocketMessage;
-import info.bitrich.xchangestream.service.netty.WebSocketClientHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
 import io.reactivex.Observable;
@@ -19,8 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.knowm.xchange.exceptions.ExchangeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OkExStreamingService extends StreamingAuthedService {
 

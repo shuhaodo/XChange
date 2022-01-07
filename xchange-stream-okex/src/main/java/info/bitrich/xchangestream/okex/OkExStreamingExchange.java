@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OkExStreamingExchange extends OkexExchange implements StreamingExchange {
-  private static final String PUBLIC_API_URI = "wss://ws.okex.com:8443/ws/v5/public";
-  private static final String PRIVATE_API_URI = "wss://ws.okex.com:8443/ws/v5/private";
+  private static final String PUBLIC_API_URI = "wss://wsaws.okex.com:8443/ws/v5/public";
+  private static final String PRIVATE_API_URI = "wss://wsaws.okex.com:8443/ws/v5/private";
 
   private final OkExStreamingService publicStreamingService;
   private final OkExStreamingService privateStreamingService;
